@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="North & Nest — a polished demo marketplace for booking and hosting Blue Mountain stays." />
+    <meta name="theme-color" content="#f6f4ef" />
+    <title>North & Nest — Blue Mountain stays</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header" id="top">
+      <a class="brand" href="#top" aria-label="North and Nest home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 42 42" role="img"><path d="M7 30 20.8 7 35 30h-8l-6.2-10.4L15 30H7Z"/><path d="m13 31 7.8-13L29 31"/></svg>
+        </span>
+        <span>North &amp; Nest</span>
+      </a>
+
+      <nav class="main-nav" aria-label="Main navigation">
+        <a class="active" href="#stays">Explore</a>
+        <button class="nav-link" type="button" data-open-trips>Trips <span class="trip-count" aria-label="booked trips">0</span></button>
+        <a href="#host">Host</a>
+      </nav>
+
+      <button class="host-pill" type="button" data-open-host>
+        <span>List your place</span>
+        <span class="avatar" aria-hidden="true">BN</span>
+      </button>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-media">
+          <img src="https://images.unsplash.com/photo-1601918774946-25832a4be0d6?auto=format&fit=crop&w=1800&q=88" alt="Modern cabin glowing warmly among snow-covered evergreens" />
+          <div class="hero-overlay"></div>
+          <div class="hero-copy">
+            <p class="eyebrow light">Stay close to the wild</p>
+            <h1 id="hero-title">Find your place<br />in the <em>mountains.</em></h1>
+            <p>Design-led cabins, slope-side chalets, and quiet escapes around Blue Mountain.</p>
+          </div>
+          <div class="hero-note" aria-hidden="true">
+            <span>Featured escape</span>
+            <strong>Glass House on Georgian Bay</strong>
+          </div>
+        </div>
+
+        <form class="search-card" id="search-form" aria-label="Search available stays">
+          <div class="search-field destination-field">
+            <label for="destination">Where</label>
+            <span class="field-icon" aria-hidden="true">⌖</span>
+            <input id="destination" name="destination" type="text" value="Blue Mountains" autocomplete="off" />
+          </div>
+          <div class="search-field">
+            <label for="check-in">Check in</label>
+            <input id="check-in" name="checkIn" type="date" required />
+          </div>
+          <div class="search-field">
+            <label for="check-out">Check out</label>
+            <input id="check-out" name="checkOut" type="date" required />
+          </div>
+          <div class="search-field">
+            <label for="guest-select">Guests</label>
+            <select id="guest-select" name="guests">
+              <option value="1">1 guest</option>
+              <option value="2" selected>2 guests</option>
+              <option value="3">3 guests</option>
+              <option value="4">4 guests</option>
+              <option value="6">5–6 guests</option>
+              <option value="8">7–8 guests</option>
+            </select>
+          </div>
+          <button class="search-button" type="submit" aria-label="Search stays">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+            <span>Search</span>
+          </button>
+        </form>
+      </section>
+
+      <section class="section intro-section" id="stays" aria-labelledby="stays-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Curated for the season</p>
+            <h2 id="stays-title">Stays worth slowing down for.</h2>
+          </div>
+          <div class="heading-actions">
+            <p>Every stay is handpicked for its sense of place, thoughtful design, and proximity to the outdoors.</p>
+            <div class="carousel-controls" aria-hidden="true">
+              <button type="button" tabindex="-1">←</button><button type="button" tabindex="-1">→</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-row" aria-label="Filter stays">
+          <button class="filter-chip active" type="button" data-filter="All">All stays</button>
+          <button class="filter-chip" type="button" data-filter="Ski-in / ski-out">Ski-in / ski-out</button>
+          <button class="filter-chip" type="button" data-filter="Cabin">Cabins</button>
+          <button class="filter-chip" type="button" data-filter="Hot tub">Hot tubs</button>
+          <button class="filter-chip" type="button" data-filter="Pet-friendly">Pet-friendly</button>
+        </div>
+
+        <div class="listing-grid" id="listing-grid" aria-live="polite"></div>
+        <div class="empty-state" id="empty-state" hidden>
+          <h3>No exact matches — yet.</h3>
+          <p>Try a different filter or clear your destination to see every stay.</p>
+          <button class="secondary-button" type="button" data-clear-search>View all stays</button>
+        </div>
+      </section>
+
+      <section class="journal-band" aria-labelledby="journal-title">
+        <div class="journal-image">
+          <img src="https://images.unsplash.com/photo-1520984032042-162d526883e0?auto=format&fit=crop&w=1400&q=85" alt="Friends sharing an outdoor meal near a mountain cabin" />
+        </div>
+        <div class="journal-copy">
+          <p class="eyebrow light">The local edit · 01</p>
+          <h2 id="journal-title">A weekend,<br />well spent.</h2>
+          <p>Fresh tracks at first light. A long lunch in the village. Sauna, cards, and nowhere else to be. We planned your ideal 48 hours in the Blue Mountains.</p>
+          <a href="#stays">Explore the weekend guide <span aria-hidden="true">↗</span></a>
+        </div>
+      </section>
+
+      <section class="section host-section" id="host" aria-labelledby="host-title">
+        <div class="host-copy">
+          <p class="eyebrow">For local hosts</p>
+          <h2 id="host-title">Your home,<br />beautifully hosted.</h2>
+          <p>Share your place with considerate travellers. You set the price and availability; the demo dashboard keeps your listing and reservations together.</p>
+          <div class="host-benefits">
+            <div><strong>01</strong><span>Create a listing in minutes</span></div>
+            <div><strong>02</strong><span>Track reservations at a glance</span></div>
+            <div><strong>03</strong><span>Keep full control of availability</span></div>
+          </div>
+          <button class="primary-button" type="button" data-open-host>Open host dashboard <span>→</span></button>
+        </div>
+        <div class="host-dashboard-preview" aria-label="Host dashboard preview">
+          <div class="preview-topline"><span>Host overview</span><span class="status-dot">Live demo</span></div>
+          <div class="preview-earnings">
+            <span>October earnings</span>
+            <strong id="preview-earnings">$4,860</strong>
+            <small>Across all demo listings</small>
+          </div>
+          <div class="chart" aria-hidden="true">
+            <span style="height:32%"></span><span style="height:44%"></span><span style="height:36%"></span><span style="height:65%"></span><span style="height:53%"></span><span style="height:78%"></span><span class="accent" style="height:92%"></span><span style="height:68%"></span><span style="height:82%"></span><span style="height:56%"></span>
+          </div>
+          <div class="preview-reservation">
+            <div class="mini-avatar">AM</div>
+            <div><strong>Alex M.</strong><span>Forest Frame Cabin · Oct 18–20</span></div>
+            <span class="confirmed">Confirmed</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta-section">
+        <p class="eyebrow light">Your next chapter</p>
+        <h2>Come for the mountain.<br /><em>Stay for the feeling.</em></h2>
+        <button class="light-button" type="button" data-scroll-stays>Find your stay</button>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <a class="brand footer-brand" href="#top">
+          <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 42 42"><path d="M7 30 20.8 7 35 30h-8l-6.2-10.4L15 30H7Z"/><path d="m13 31 7.8-13L29 31"/></svg></span>
+          <span>North &amp; Nest</span>
+        </a>
+        <p>Independent stays around Blue Mountain,<br />Ontario. A concept marketplace demo.</p>
+      </div>
+      <div class="footer-links">
+        <div><strong>Explore</strong><a href="#stays">All stays</a><a href="#stays">Cabins</a><a href="#stays">Ski escapes</a></div>
+        <div><strong>Hosting</strong><a href="#host">List your home</a><button type="button" data-open-host>Host dashboard</button><a href="#host">Hosting guide</a></div>
+        <div><strong>North &amp; Nest</strong><a href="#journal-title">Our journal</a><a href="#top">About</a><a href="mailto:hello@example.com">Contact</a></div>
+      </div>
+      <div class="footer-bottom"><span>© 2026 North &amp; Nest · Demo only</span><span>Built for Blue Mountain</span></div>
+    </footer>
+
+    <div class="modal-shell" id="booking-modal" hidden>
+      <div class="modal-backdrop" data-close-modal></div>
+      <section class="modal booking-modal" role="dialog" aria-modal="true" aria-labelledby="booking-title">
+        <button class="modal-close" type="button" data-close-modal aria-label="Close booking">×</button>
+        <div class="booking-image-wrap"><img id="booking-image" src="" alt="" /></div>
+        <div class="booking-content">
+          <p class="eyebrow">Reserve your stay</p>
+          <h2 id="booking-title">Stay name</h2>
+          <p class="booking-location" id="booking-location"></p>
+          <form id="booking-form">
+            <input type="hidden" id="booking-listing-id" />
+            <div class="date-pair">
+              <label>Check in<input id="booking-checkin" type="date" required /></label>
+              <label>Check out<input id="booking-checkout" type="date" required /></label>
+            </div>
+            <label>Guests<select id="booking-guests" required></select></label>
+            <div class="price-breakdown" id="price-breakdown"></div>
+            <button class="primary-button full-width" type="submit">Request to book <span>→</span></button>
+            <p class="fine-print">Demo booking — no payment will be collected.</p>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <div class="drawer-shell" id="trips-drawer" hidden>
+      <div class="modal-backdrop" data-close-trips></div>
+      <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="trips-title">
+        <div class="drawer-header"><div><p class="eyebrow">Your account</p><h2 id="trips-title">Upcoming trips</h2></div><button class="modal-close" type="button" data-close-trips aria-label="Close trips">×</button></div>
+        <div id="trips-list" class="trips-list"></div>
+      </aside>
+    </div>
+
+    <div class="drawer-shell" id="host-drawer" hidden>
+      <div class="modal-backdrop" data-close-host></div>
+      <aside class="drawer host-drawer" role="dialog" aria-modal="true" aria-labelledby="host-drawer-title">
+        <div class="drawer-header"><div><p class="eyebrow">Host workspace</p><h2 id="host-drawer-title">Your dashboard</h2></div><button class="modal-close" type="button" data-close-host aria-label="Close host dashboard">×</button></div>
+        <div class="host-stats">
+          <div><span>Demo revenue</span><strong id="host-revenue">$0</strong></div>
+          <div><span>Bookings</span><strong id="host-bookings">0</strong></div>
+          <div><span>Listings</span><strong id="host-listings">0</strong></div>
+        </div>
+        <div class="dashboard-section">
+          <div class="dashboard-section-title"><h3>Recent reservations</h3><span>Local demo data</span></div>
+          <div id="host-reservations" class="reservation-list"></div>
+        </div>
+        <details class="add-listing-panel">
+          <summary>Add a new listing <span>＋</span></summary>
+          <form id="listing-form">
+            <div class="form-grid">
+              <label>Property name<input name="title" required placeholder="e.g. Birch & Stone Chalet" /></label>
+              <label>Location<input name="location" required placeholder="e.g. Collingwood, Ontario" /></label>
+              <label>Nightly price<input name="price" type="number" min="60" required placeholder="320" /></label>
+              <label>Maximum guests<input name="guests" type="number" min="1" max="16" required value="4" /></label>
+            </div>
+            <label>Image URL<input name="image" type="url" required value="https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1200&q=85" /></label>
+            <label>Short description<textarea name="description" rows="3" required placeholder="A design-led escape close to the trails."></textarea></label>
+            <button class="primary-button full-width" type="submit">Publish demo listing <span>→</span></button>
+          </form>
+        </details>
+      </aside>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
