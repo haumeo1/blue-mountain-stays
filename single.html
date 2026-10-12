@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Book a private Blue Mountain house directly. Single-property booking website demo." />
+    <meta name="theme-color" content="#f4f1e9" />
+    <title>The Blue Mountain House — Direct booking</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="single.css" />
+    <script src="single.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="The Blue Mountain House home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 42 42"><path d="M7 30 20.8 7 35 30h-8l-6.2-10.4L15 30H7Z"/><path d="m13 31 7.8-13L29 31"/></svg>
+        </span>
+        <span>The Blue Mountain House</span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a href="#house">The house</a>
+        <a href="#amenities">Amenities</a>
+        <a href="#location">Location</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <button class="header-book" type="button" data-book-now>Book your stay <span>→</span></button>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top" aria-labelledby="hero-title">
+        <img id="hero-photo" src="" alt="Blue Mountain vacation house in a forest setting" />
+        <div class="hero-shade"></div>
+        <div class="hero-content">
+          <p class="eyebrow light">A private stay in The Blue Mountains, Ontario</p>
+          <h1 id="hero-title">Your place to<br /><em>come together.</em></h1>
+          <p class="hero-subtitle">One thoughtfully designed house. Your whole group. Mountains, village, and Georgian Bay close by.</p>
+          <div class="hero-badges">
+            <span>Entire home</span><span>Up to 8 guests</span><span>4 bedrooms</span>
+          </div>
+        </div>
+        <a class="hero-gallery-link" href="#gallery"><span>View the house</span><span>↘</span></a>
+      </section>
+
+      <form class="availability-bar" id="hero-booking-form" aria-label="Check availability">
+        <div class="availability-heading">
+          <span class="pulse"></span>
+          <div><small>Direct booking</small><strong>Plan your stay</strong></div>
+        </div>
+        <label>Check in<input id="hero-checkin" name="checkin" type="date" required /></label>
+        <label>Check out<input id="hero-checkout" name="checkout" type="date" required /></label>
+        <label>Guests<select id="hero-guests" name="guests"></select></label>
+        <button type="submit">Check availability <span>→</span></button>
+      </form>
+
+      <section class="section intro" id="house" aria-labelledby="intro-title">
+        <div>
+          <p class="eyebrow">The whole house is yours</p>
+          <h2 id="intro-title">Room to gather.<br />Space to exhale.</h2>
+        </div>
+        <div class="intro-copy">
+          <p class="lead">A warm, modern home made for ski weekends, summer escapes, and unhurried time with the people you love.</p>
+          <p>This demo is structured for one vacation rental only—your future photos, exact house details, policies, and location can be dropped in without rebuilding the booking experience.</p>
+          <div class="property-facts" aria-label="Property details">
+            <div><strong>8</strong><span>Guests</span></div>
+            <div><strong>4</strong><span>Bedrooms</span></div>
+            <div><strong>5</strong><span>Beds</span></div>
+            <div><strong>2.5</strong><span>Bathrooms</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="gallery-section" id="gallery" aria-labelledby="gallery-title">
+        <div class="gallery-heading">
+          <div><p class="eyebrow">A look inside</p><h2 id="gallery-title">Make yourself at home.</h2></div>
+          <button type="button" data-open-gallery="0">View all photos <span>＋</span></button>
+        </div>
+        <div class="photo-grid">
+          <button class="photo-main" type="button" data-open-gallery="0"><img id="gallery-photo-0" src="" alt="Exterior of the house" /></button>
+          <button type="button" data-open-gallery="1"><img id="gallery-photo-1" src="" alt="Living room" loading="lazy" /></button>
+          <button type="button" data-open-gallery="2"><img id="gallery-photo-2" src="" alt="Kitchen and dining area" loading="lazy" /></button>
+          <button type="button" data-open-gallery="3"><img id="gallery-photo-3" src="" alt="Comfortable bedroom" loading="lazy" /></button>
+          <button type="button" data-open-gallery="4"><img id="gallery-photo-4" src="" alt="Outdoor space" loading="lazy" /></button>
+        </div>
+        <p class="photo-note">Current photography is placeholder content and will be replaced with photos of the actual house.</p>
+      </section>
+
+      <section class="section stay-story">
+        <div class="story-image"><img id="story-photo" src="" alt="Relaxing space at the house" loading="lazy" /></div>
+        <div class="story-copy">
+          <p class="eyebrow light">A house for every season</p>
+          <h2>First tracks.<br />Long dinners.<br /><em>Slow mornings.</em></h2>
+          <p>Start the day on the slopes, wander the village, then return to a private place that feels completely your own. In warmer months, trade ski boots for trail shoes and beach towels.</p>
+          <div class="season-tabs" aria-label="Seasonal ideas">
+            <button class="active" type="button" data-season="winter">Winter</button>
+            <button type="button" data-season="summer">Summer</button>
+            <button type="button" data-season="anytime">Anytime</button>
+          </div>
+          <p class="season-copy" id="season-copy">Skiing, snowshoeing, village evenings, and a warm house waiting when the lifts close.</p>
+        </div>
+      </section>
+
+      <section class="section amenities" id="amenities" aria-labelledby="amenities-title">
+        <div class="amenities-heading">
+          <p class="eyebrow">Everything you need</p>
+          <h2 id="amenities-title">Stay easy.</h2>
+          <p>These are sample amenities for the demo. Update them to match the house before taking real reservations.</p>
+        </div>
+        <div class="amenity-grid">
+          <article><span>♨</span><h3>Private hot tub</h3><p>A warm soak after a day outside.</p></article>
+          <article><span>♨</span><h3>Indoor fireplace</h3><p>A comfortable gathering place for quiet evenings.</p></article>
+          <article><span>⌁</span><h3>Full kitchen</h3><p>Cookware, dinnerware, and room to cook together.</p></article>
+          <article><span>⌁</span><h3>Fast Wi-Fi</h3><p>Reliable connection throughout the house.</p></article>
+          <article><span>◇</span><h3>Gear storage</h3><p>Space for skis, boards, bikes, and boots.</p></article>
+          <article><span>✦</span><h3>Family ready</h3><p>Flexible sleeping spaces for groups and families.</p></article>
+        </div>
+      </section>
+
+      <section class="location-section" id="location" aria-labelledby="location-title">
+        <div class="location-copy">
+          <p class="eyebrow light">The Blue Mountains, Ontario</p>
+          <h2 id="location-title">Close to what<br />brought you here.</h2>
+          <p>The exact address stays private until booking. Replace the example travel times below with accurate details for your property.</p>
+          <div class="distance-list">
+            <div><span>Blue Mountain Village</span><strong>Sample · 5 min</strong></div>
+            <div><span>Scenic Caves Nature Adventures</span><strong>Sample · 10 min</strong></div>
+            <div><span>Downtown Collingwood</span><strong>Sample · 15 min</strong></div>
+            <div><span>Georgian Bay beaches</span><strong>Sample · 15 min</strong></div>
+          </div>
+        </div>
+        <div class="location-art" aria-label="Stylized map of the Blue Mountain area">
+          <div class="map-lines"></div>
+          <span class="map-label village">Blue Mountain<br />Village</span>
+          <span class="map-label bay">Georgian Bay</span>
+          <span class="map-pin"><i></i><b>The house</b></span>
+          <span class="map-compass">N ↑</span>
+        </div>
+      </section>
+
+      <section class="section booking-section" id="book" aria-labelledby="booking-title">
+        <div class="booking-intro">
+          <p class="eyebrow">Book direct</p>
+          <h2 id="booking-title">Ready when<br />you are.</h2>
+          <p>Choose your dates to see a complete demo price. No payment is collected and the reservation is stored only in this browser.</p>
+          <div class="direct-benefits">
+            <div><span>✓</span><p><strong>Clear pricing</strong><small>See the full demo total before booking.</small></p></div>
+            <div><span>✓</span><p><strong>Whole-home privacy</strong><small>One house, reserved for one group.</small></p></div>
+            <div><span>✓</span><p><strong>Simple management</strong><small>View your confirmation any time on this device.</small></p></div>
+          </div>
+        </div>
+        <form class="booking-card" id="booking-form">
+          <div class="booking-card-top"><div><span>From</span><strong><b id="nightly-price">$425</b> / night</strong></div><span>★ New direct stay</span></div>
+          <div class="booking-fields">
+            <label>Check in<input id="booking-checkin" type="date" required /></label>
+            <label>Check out<input id="booking-checkout" type="date" required /></label>
+            <label class="guest-field">Guests<select id="booking-guests" required></select></label>
+          </div>
+          <div class="price-breakdown" id="price-breakdown"></div>
+          <button class="primary-button" type="submit">Reserve this house <span>→</span></button>
+          <p class="booking-fine-print">Demo only — no payment or real reservation will be created.</p>
+          <button class="manage-booking" type="button" data-manage-booking hidden>View my demo booking</button>
+        </form>
+      </section>
+
+      <section class="section faq" id="faq" aria-labelledby="faq-title">
+        <div><p class="eyebrow">Good to know</p><h2 id="faq-title">Before you arrive.</h2></div>
+        <div class="faq-list">
+          <details><summary>What are check-in and check-out times?<span>＋</span></summary><p>Demo policy: check-in is from 4:00 PM and check-out is by 11:00 AM. Replace this with your actual house policy.</p></details>
+          <details><summary>Is the house suitable for children?<span>＋</span></summary><p>The demo assumes a family-friendly house. Add specific notes about stairs, cribs, gates, and other safety considerations.</p></details>
+          <details><summary>What is the cancellation policy?<span>＋</span></summary><p>No real cancellation policy applies to this demo. Add your terms before accepting live reservations.</p></details>
+          <details><summary>Can I bring a pet?<span>＋</span></summary><p>Pet rules are not yet configured. Replace this answer with the house’s real policy and any applicable fee.</p></details>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-main">
+        <a class="brand footer-brand" href="#top"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 42 42"><path d="M7 30 20.8 7 35 30h-8l-6.2-10.4L15 30H7Z"/><path d="m13 31 7.8-13L29 31"/></svg></span><span>The Blue Mountain House</span></a>
+        <p>One private home. One memorable stay.<br />A direct-booking concept for The Blue Mountains.</p>
+        <button type="button" data-book-now>Check dates <span>→</span></button>
+      </div>
+      <div class="footer-links"><a href="#house">The house</a><a href="#amenities">Amenities</a><a href="#location">Location</a><a href="#faq">FAQ</a><button type="button" data-owner>Owner dashboard</button></div>
+      <div class="footer-bottom"><span>© 2026 The Blue Mountain House</span><span>Demo website · Details and photography are placeholders</span></div>
+    </footer>
+
+    <div class="lightbox" id="lightbox" hidden>
+      <div class="lightbox-backdrop" data-close-gallery></div>
+      <button class="lightbox-close" type="button" data-close-gallery aria-label="Close gallery">×</button>
+      <button class="lightbox-arrow previous" type="button" data-gallery-prev aria-label="Previous photo">←</button>
+      <figure><img id="lightbox-image" src="" alt="" /><figcaption id="lightbox-caption"></figcaption></figure>
+      <button class="lightbox-arrow next" type="button" data-gallery-next aria-label="Next photo">→</button>
+    </div>
+
+    <div class="modal-shell" id="confirmation-modal" hidden>
+      <div class="modal-backdrop" data-close-confirmation></div>
+      <section class="confirmation-card" role="dialog" aria-modal="true" aria-labelledby="confirmation-title">
+        <button class="modal-close" type="button" data-close-confirmation aria-label="Close confirmation">×</button>
+        <span class="confirmation-icon">✓</span>
+        <p class="eyebrow">Demo booking saved</p>
+        <h2 id="confirmation-title">The house is yours.</h2>
+        <p>Your demo booking is stored on this device. No payment was collected and no real reservation was sent.</p>
+        <div class="confirmation-details" id="confirmation-details"></div>
+        <button class="primary-button" type="button" data-close-confirmation>Back to the house <span>→</span></button>
+      </section>
+    </div>
+
+    <div class="drawer-shell" id="owner-drawer" hidden>
+      <div class="modal-backdrop" data-close-owner></div>
+      <aside class="owner-drawer" role="dialog" aria-modal="true" aria-labelledby="owner-title">
+        <div class="drawer-heading"><div><p class="eyebrow">Private demo view</p><h2 id="owner-title">Owner dashboard</h2></div><button class="modal-close" type="button" data-close-owner aria-label="Close owner dashboard">×</button></div>
+        <div class="owner-stats"><div><span>Property</span><strong>1</strong></div><div><span>Demo bookings</span><strong id="owner-booking-count">0</strong></div><div><span>Demo revenue</span><strong id="owner-revenue">$0</strong></div></div>
+        <div class="owner-panel"><div><h3>Reservations</h3><span>Stored in this browser</span></div><div id="owner-bookings"></div></div>
+        <div class="photo-helper"><strong>Ready for your real photos</strong><p>Replace the URLs in the <code>PROPERTY.photos</code> list near the top of <code>single.js</code>. The hero, gallery, and booking visuals update automatically.</p></div>
+      </aside>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

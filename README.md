@@ -1,16 +1,20 @@
 # North & Nest
 
-A polished, responsive vacation-rental marketplace demo for Blue Mountain, Ontario.
+A polished, responsive direct-booking demo for one vacation home in Blue Mountain, Ontario.
 
 ## Demo features
 
-- Browse and filter curated properties
-- Search by destination, dates, and guest count
-- Save favourite stays
+- Explore one dedicated property and its amenities
+- Browse a responsive photo gallery
+- Search dates and guest count
 - Complete a booking with a live price breakdown
-- View upcoming trips
-- Open a host dashboard, review reservations, and publish a demo listing
+- View a saved demo confirmation
+- Open an owner dashboard and review demo reservations
 - Browser-local persistence via `localStorage`
+
+## Replacing the placeholder photos
+
+Open `single.js` and replace the six URLs in `PROPERTY.photos` near the top of the file. The first photo is used as the hero image; the remaining photos populate the gallery and story section.
 
 This is a front-end concept demo. Authentication, payments, server-side inventory locking, messaging, and production data storage would be required before handling real bookings.
 
