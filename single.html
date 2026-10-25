@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="single.css" />
-    <script src="single.js" defer></script>
+    <script src="single.js" type="module"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -145,11 +145,11 @@
         <div class="booking-intro">
           <p class="eyebrow">Book direct</p>
           <h2 id="booking-title">Ready when<br />you are.</h2>
-          <p>Choose your dates to see a complete demo price. No payment is collected and the reservation is stored only in this browser.</p>
+          <p>Choose your dates, see the complete price, and send a secure booking request. No payment is collected yet; you can add the stay to your calendar as soon as it is submitted.</p>
           <div class="direct-benefits">
             <div><span>✓</span><p><strong>Clear pricing</strong><small>See the full demo total before booking.</small></p></div>
             <div><span>✓</span><p><strong>Whole-home privacy</strong><small>One house, reserved for one group.</small></p></div>
-            <div><span>✓</span><p><strong>Simple management</strong><small>View your confirmation any time on this device.</small></p></div>
+            <div><span>✓</span><p><strong>Calendar ready</strong><small>Add the confirmed dates to Apple, Google, or Outlook.</small></p></div>
           </div>
         </div>
         <form class="booking-card" id="booking-form">
@@ -159,10 +159,16 @@
             <label>Check out<input id="booking-checkout" type="date" required /></label>
             <label class="guest-field">Guests<select id="booking-guests" required></select></label>
           </div>
+          <div class="guest-details">
+            <label>Full name<input id="guest-name" autocomplete="name" maxlength="100" required placeholder="Your name" /></label>
+            <label>Email address<input id="guest-email" type="email" autocomplete="email" maxlength="254" required placeholder="you@example.com" /></label>
+            <label>Phone <span>Optional</span><input id="guest-phone" type="tel" autocomplete="tel" maxlength="40" placeholder="(705) 555-0123" /></label>
+            <label>Anything we should know? <span>Optional</span><textarea id="guest-notes" maxlength="1000" rows="3" placeholder="Arrival details, accessibility needs, or a question for the host"></textarea></label>
+          </div>
           <div class="price-breakdown" id="price-breakdown"></div>
-          <button class="primary-button" type="submit">Reserve this house <span>→</span></button>
-          <p class="booking-fine-print">Demo only — no payment or real reservation will be created.</p>
-          <button class="manage-booking" type="button" data-manage-booking hidden>View my demo booking</button>
+          <button class="primary-button" type="submit" id="booking-submit">Send booking request <span>→</span></button>
+          <p class="booking-fine-print" id="booking-mode">Checking secure booking connection…</p>
+          <button class="manage-booking" type="button" data-manage-booking hidden>View my latest booking</button>
         </form>
       </section>
 
@@ -183,8 +189,8 @@
         <p>One private home. One memorable stay.<br />A direct-booking concept for The Blue Mountains.</p>
         <button type="button" data-book-now>Check dates <span>→</span></button>
       </div>
-      <div class="footer-links"><a href="#house">The house</a><a href="#amenities">Amenities</a><a href="#location">Location</a><a href="#faq">FAQ</a><button type="button" data-owner>Owner dashboard</button></div>
-      <div class="footer-bottom"><span>© 2026 The Blue Mountain House</span><span>Demo website · Details and photography are placeholders</span></div>
+      <div class="footer-links"><a href="#house">The house</a><a href="#amenities">Amenities</a><a href="#location">Location</a><a href="#faq">FAQ</a><a href="/admin">Owner dashboard</a></div>
+      <div class="footer-bottom"><span>© 2026 The Blue Mountain House</span><span>Direct booking · Secure management by Supabase</span></div>
     </footer>
 
     <div class="lightbox" id="lightbox" hidden>
@@ -200,22 +206,13 @@
       <section class="confirmation-card" role="dialog" aria-modal="true" aria-labelledby="confirmation-title">
         <button class="modal-close" type="button" data-close-confirmation aria-label="Close confirmation">×</button>
         <span class="confirmation-icon">✓</span>
-        <p class="eyebrow">Demo booking saved</p>
-        <h2 id="confirmation-title">The house is yours.</h2>
-        <p>Your demo booking is stored on this device. No payment was collected and no real reservation was sent.</p>
+        <p class="eyebrow" id="confirmation-eyebrow">Booking request received</p>
+        <h2 id="confirmation-title">Your stay is on its way.</h2>
+        <p id="confirmation-copy">No payment was collected. The owner can now review your request and confirm the stay.</p>
         <div class="confirmation-details" id="confirmation-details"></div>
+        <a class="calendar-download" id="booking-calendar-link" href="#" hidden>Download for my calendar <span>↓</span></a>
         <button class="primary-button" type="button" data-close-confirmation>Back to the house <span>→</span></button>
       </section>
-    </div>
-
-    <div class="drawer-shell" id="owner-drawer" hidden>
-      <div class="modal-backdrop" data-close-owner></div>
-      <aside class="owner-drawer" role="dialog" aria-modal="true" aria-labelledby="owner-title">
-        <div class="drawer-heading"><div><p class="eyebrow">Private demo view</p><h2 id="owner-title">Owner dashboard</h2></div><button class="modal-close" type="button" data-close-owner aria-label="Close owner dashboard">×</button></div>
-        <div class="owner-stats"><div><span>Property</span><strong>1</strong></div><div><span>Demo bookings</span><strong id="owner-booking-count">0</strong></div><div><span>Demo revenue</span><strong id="owner-revenue">$0</strong></div></div>
-        <div class="owner-panel"><div><h3>Reservations</h3><span>Stored in this browser</span></div><div id="owner-bookings"></div></div>
-        <div class="photo-helper"><strong>Ready for your real photos</strong><p>Replace the URLs in the <code>PROPERTY.photos</code> list near the top of <code>single.js</code>. The hero, gallery, and booking visuals update automatically.</p></div>
-      </aside>
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>

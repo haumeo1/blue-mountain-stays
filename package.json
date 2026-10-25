@@ -1,0 +1,14 @@
+{
+  "name": "blue-mountain-house",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "test": "node --test",
+    "check": "node --check single.js && node --check admin.js && node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
