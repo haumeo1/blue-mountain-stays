@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="theme-color" content="#183c32" />
+    <title>House manager — The Blue Mountain House</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="admin.css" />
+    <script src="admin.js" type="module"></script>
+  </head>
+  <body>
+    <div class="admin-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="Back to the property website">
+          <span class="brand-mark"><svg viewBox="0 0 42 42"><path d="M7 30 20.8 7 35 30h-8l-6.2-10.4L15 30H7Z"/><path d="m13 31 7.8-13L29 31"/></svg></span>
+          <span>Blue Mountain<br />House manager</span>
+        </a>
+        <nav aria-label="Admin navigation">
+          <button class="active" type="button" data-scroll="overview"><span>01</span> Overview</button>
+          <button type="button" data-scroll="reservations"><span>02</span> Reservations</button>
+          <button type="button" data-scroll="availability"><span>03</span> Availability</button>
+          <button type="button" data-scroll="calendar"><span>04</span> Calendar</button>
+        </nav>
+        <div class="sidebar-footer">
+          <span class="connection-dot" id="connection-dot"></span>
+          <div><strong id="connection-label">Checking connection</strong><small>Supabase + Vercel</small></div>
+        </div>
+      </aside>
+
+      <main>
+        <section class="auth-view" id="auth-view" hidden>
+          <div class="auth-card">
+            <p class="eyebrow">Private owner access</p>
+            <h1>Welcome back.</h1>
+            <p>Enter an approved administrator email. Supabase will send a secure sign-in link—no password to remember.</p>
+            <form id="login-form">
+              <label>Email address<input id="login-email" type="email" autocomplete="email" placeholder="owner@example.com" required /></label>
+              <button type="submit">Email me a sign-in link <span>→</span></button>
+            </form>
+            <p class="auth-message" id="auth-message" role="status"></p>
+            <a href="/">← Return to the property website</a>
+          </div>
+        </section>
+
+        <div id="dashboard" hidden>
+          <header class="topbar">
+            <div><p class="eyebrow">Property operations</p><h1>Good <span id="daypart">day</span>.</h1></div>
+            <div class="topbar-actions"><span id="admin-email"></span><button id="refresh-button" type="button">Refresh</button><button id="logout-button" type="button">Sign out</button></div>
+          </header>
+
+          <section class="overview" id="overview">
+            <div class="section-heading"><div><p class="eyebrow">At a glance</p><h2>Your booking picture.</h2></div><p id="today-label"></p></div>
+            <div class="stats-grid">
+              <article><span>Upcoming stays</span><strong id="stat-upcoming">—</strong><small>Pending and confirmed</small></article>
+              <article><span>Confirmed value</span><strong id="stat-revenue">—</strong><small>Before payouts and tax</small></article>
+              <article><span>Next arrival</span><strong id="stat-arrival">—</strong><small id="stat-arrival-note">No stay scheduled</small></article>
+              <article class="accent-stat"><span>Occupancy</span><strong id="stat-occupancy">—</strong><small>Next 30 nights</small></article>
+            </div>
+          </section>
+
+          <section class="panel" id="reservations">
+            <div class="panel-heading">
+              <div><p class="eyebrow">Guest stays</p><h2>Reservations</h2></div>
+              <label class="filter-label">Status<select id="status-filter"><option value="">All bookings</option><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="cancelled">Cancelled</option><option value="completed">Completed</option></select></label>
+            </div>
+            <div class="table-wrap"><table><thead><tr><th>Guest</th><th>Stay</th><th>Value</th><th>Payment</th><th>Status</th><th>Calendar</th></tr></thead><tbody id="booking-rows"></tbody></table></div>
+            <div class="empty-state" id="booking-empty" hidden>No reservations match this view.</div>
+          </section>
+
+          <section class="availability-grid" id="availability">
+            <div class="panel block-form-panel">
+              <p class="eyebrow">Owner dates</p><h2>Block availability</h2>
+              <p>Reserve dates for maintenance or personal use. New guests will see them as unavailable.</p>
+              <form id="block-form">
+                <div class="date-row"><label>Start<input id="block-start" type="date" required /></label><label>End<input id="block-end" type="date" required /></label></div>
+                <label>Reason<input id="block-reason" maxlength="200" placeholder="Maintenance, owner stay…" /></label>
+                <button type="submit">Block these dates <span>＋</span></button>
+              </form>
+            </div>
+            <div class="panel">
+              <div class="panel-heading compact"><div><p class="eyebrow">Unavailable</p><h2>Owner blocks</h2></div></div>
+              <div class="block-list" id="block-list"></div>
+              <div class="empty-state" id="block-empty" hidden>No owner blocks yet.</div>
+            </div>
+          </section>
+
+          <section class="calendar-panel" id="calendar">
+            <div><p class="eyebrow light">Live calendar connection</p><h2>Bookings in your<br />own calendar app.</h2><p>Subscribe once in Apple Calendar, Google Calendar, or Outlook. New reservations and owner blocks will appear automatically when your calendar refreshes the feed.</p></div>
+            <div class="calendar-card">
+              <span>Private iCalendar feed</span>
+              <code id="calendar-url">Loading secure link…</code>
+              <div><a id="subscribe-calendar" href="#">Open in calendar app</a><button id="copy-calendar" type="button">Copy link</button></div>
+              <small>Treat this link like a password. Anyone with it can see reservation names and dates.</small>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

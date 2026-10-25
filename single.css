@@ -15,7 +15,7 @@
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--cream); color: var(--ink); font-family: "DM Sans", sans-serif; -webkit-font-smoothing: antialiased; }
 body.layer-open { overflow: hidden; }
-button, input, select { font: inherit; }
+button, input, select, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { color: inherit; }
 a { color: inherit; text-decoration: none; }
@@ -140,12 +140,18 @@ img { display: block; max-width: 100%; }
 .booking-fields label:first-child { border-right: 1px solid var(--line); }
 .booking-fields .guest-field { grid-column: 1 / -1; border-top: 1px solid var(--line); }
 .booking-fields input, .booking-fields select { border: 0; padding: 0; background: transparent; color: var(--ink); outline: 0; font-size: .76rem; text-transform: none; letter-spacing: 0; }
+.guest-details { display: grid; gap: .8rem; margin-top: .9rem; }
+.guest-details label { display: grid; gap: .45rem; color: var(--muted); text-transform: uppercase; font-size: .56rem; letter-spacing: .12em; font-weight: 700; }
+.guest-details label span { color: #a4a9a6; font-weight: 400; }
+.guest-details input, .guest-details textarea { width: 100%; border: 1px solid var(--line); border-radius: 7px; padding: .78rem .85rem; background: #fffefa; color: var(--ink); outline: 0; resize: vertical; text-transform: none; letter-spacing: 0; font-size: .7rem; }
+.guest-details input:focus, .guest-details textarea:focus { border-color: var(--forest); box-shadow: 0 0 0 3px rgba(30, 66, 56, .08); }
 .price-breakdown { display: flex; flex-direction: column; gap: .8rem; padding: 1.5rem 0; }
 .price-row { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); }
 .price-row.total { border-top: 1px solid var(--line); padding-top: .9rem; color: var(--ink); font-weight: 700; }
 .primary-button { width: 100%; border: 0; background: var(--forest); color: white; border-radius: 8px; padding: 1rem 1.1rem; display: flex; justify-content: space-between; cursor: pointer; font-size: .72rem; font-weight: 600; }
 .booking-fine-print { text-align: center; color: #868c89; font-size: .6rem; }
 .manage-booking { display: block; margin: .8rem auto 0; border: 0; border-bottom: 1px solid var(--line); background: none; padding: .3rem; color: var(--forest); font-size: .65rem; cursor: pointer; }
+.booking-card button[disabled] { opacity: .6; cursor: wait; }
 
 .faq { display: grid; grid-template-columns: .7fr 1.3fr; gap: clamp(3rem, 9vw, 10rem); }
 .faq-list details { border-top: 1px solid var(--line); }
@@ -180,6 +186,8 @@ footer { background: #101a17; color: white; padding: 5rem clamp(1.25rem, 7vw, 7r
 .confirmation-card > p:not(.eyebrow) { color: var(--muted); line-height: 1.65; font-size: .76rem; }
 .confirmation-details { text-align: left; background: var(--cream); border-radius: 9px; padding: 1rem; margin: 1.5rem 0; }
 .confirmation-details div { display: flex; justify-content: space-between; font-size: .68rem; padding: .45rem; }
+.calendar-download { display: flex; justify-content: space-between; align-items: center; margin: -.4rem 0 1rem; padding: .85rem 1rem; border: 1px solid var(--line); border-radius: 7px; color: var(--forest); text-decoration: none; font-size: .67rem; font-weight: 700; }
+.calendar-download[hidden] { display: none; }
 .owner-drawer { position: absolute; right: 0; top: 0; height: 100%; width: min(720px, 100%); background: var(--cream); padding: 2rem; overflow-y: auto; box-shadow: var(--shadow); }
 .drawer-heading { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 1rem 0 2rem; }
 .drawer-heading h2 { font-size: 2.3rem; margin: 0; }
