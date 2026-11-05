@@ -1,6 +1,6 @@
-import { getQuery, handleError, methodNotAllowed, readJsonBody, sendJson } from "../_lib/http.js";
-import { callRpc, requireAdmin, supabaseAdmin } from "../_lib/supabase.js";
-import { normalizeBlockInput } from "../_lib/validation.js";
+import { getQuery, handleError, methodNotAllowed, readJsonBody, sendJson } from "../../server/http.js";
+import { callRpc, requireAdmin, supabaseAdmin } from "../../server/integrations/supabase.js";
+import { normalizeBlockInput } from "../../server/validation.js";
 
 export default async function handler(request, response) {
   if (!["GET", "POST", "DELETE"].includes(request.method)) return methodNotAllowed(response, ["GET", "POST", "DELETE"]);

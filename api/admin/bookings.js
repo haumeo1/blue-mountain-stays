@@ -1,5 +1,5 @@
-import { getQuery, handleError, methodNotAllowed, readJsonBody, sendJson } from "../_lib/http.js";
-import { callRpc, requireAdmin, supabaseAdmin } from "../_lib/supabase.js";
+import { getQuery, handleError, methodNotAllowed, readJsonBody, sendJson } from "../../server/http.js";
+import { callRpc, requireAdmin, supabaseAdmin } from "../../server/integrations/supabase.js";
 
 const STATUSES = new Set(["pending", "confirmed", "cancelled", "completed"]);
 

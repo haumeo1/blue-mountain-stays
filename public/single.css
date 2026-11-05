@@ -1,3 +1,4 @@
+/* Guest site styles. Copied verbatim to dist/ by scripts/build.mjs. */
 :root {
   --ink: #15201c;
   --forest: #173c32;
@@ -150,6 +151,8 @@ img { display: block; max-width: 100%; }
 .price-row.total { border-top: 1px solid var(--line); padding-top: .9rem; color: var(--ink); font-weight: 700; }
 .primary-button { width: 100%; border: 0; background: var(--forest); color: white; border-radius: 8px; padding: 1rem 1.1rem; display: flex; justify-content: space-between; cursor: pointer; font-size: .72rem; font-weight: 600; }
 .booking-fine-print { text-align: center; color: #868c89; font-size: .6rem; }
+.booking-fine-print[data-state="unavailable"] { color: #9a3b2f; font-size: .7rem; font-weight: 600; }
+.primary-button:disabled { opacity: .55; cursor: not-allowed; }
 .manage-booking { display: block; margin: .8rem auto 0; border: 0; border-bottom: 1px solid var(--line); background: none; padding: .3rem; color: var(--forest); font-size: .65rem; cursor: pointer; }
 .booking-card button[disabled] { opacity: .6; cursor: wait; }
 

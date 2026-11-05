@@ -1,4 +1,4 @@
-import { HttpError } from "./http.js";
+import { HttpError } from "../http.js";
 
 export function databaseConfigured() {
   return Boolean(process.env.SUPABASE_URL && getPublishableKey() && getSecretKey());

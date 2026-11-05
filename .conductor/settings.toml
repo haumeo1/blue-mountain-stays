@@ -13,3 +13,11 @@ icon = "play"
 [scripts.run.test]
 command = "./scripts/with-node.sh npm test"
 icon = "test-tube"
+
+[scripts.run.check]
+command = "./scripts/with-node.sh npm run check"
+icon = "check"
+
+[scripts.run.build]
+command = "./scripts/with-node.sh npm run build"
+icon = "package"

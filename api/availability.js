@@ -1,6 +1,6 @@
-import { getQuery, handleError, methodNotAllowed, sendJson } from "./_lib/http.js";
-import { supabaseAdmin } from "./_lib/supabase.js";
-import { parseIsoDate } from "./_lib/validation.js";
+import { getQuery, handleError, methodNotAllowed, sendJson } from "../server/http.js";
+import { supabaseAdmin } from "../server/integrations/supabase.js";
+import { parseIsoDate } from "../server/validation.js";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") return methodNotAllowed(response, ["GET"]);

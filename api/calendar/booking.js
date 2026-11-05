@@ -1,6 +1,6 @@
-import { createCalendar, bookingEvent } from "../_lib/ics.js";
-import { getQuery, handleError, HttpError, methodNotAllowed, setSecurityHeaders } from "../_lib/http.js";
-import { supabaseAdmin } from "../_lib/supabase.js";
+import { getQuery, handleError, HttpError, methodNotAllowed, setSecurityHeaders } from "../../server/http.js";
+import { createCalendar, bookingEvent } from "../../server/integrations/calendar.js";
+import { supabaseAdmin } from "../../server/integrations/supabase.js";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") return methodNotAllowed(response, ["GET"]);

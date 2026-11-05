@@ -1,3 +1,4 @@
+// Guest site entry. Bundled to dist/assets/guest.js. Must not import server/, api/, or secrets.
 // PROPERTY CONFIGURATION
 // Replace these placeholder photo URLs later. Keep the same order:
 // 1 exterior/hero, 2 living room, 3 kitchen, 4 bedroom, 5 outdoor space, 6 lifestyle/detail.
@@ -24,7 +25,8 @@ const bookingForm = document.querySelector("#booking-form");
 const confirmationModal = document.querySelector("#confirmation-modal");
 const lightbox = document.querySelector("#lightbox");
 const toast = document.querySelector("#toast");
-const appState = { config: null, unavailable: [] };
+// mode: "loading" | "live" | "demo" | "unavailable". Booking details are kept in memory only.
+const appState = { config: null, mode: "loading", unavailable: [], demoBookings: [], lastBooking: null };
 let galleryIndex = 0;
 let toastTimer;
 
@@ -35,18 +37,10 @@ function dateOffset(days) {
   return date.toISOString().slice(0, 10);
 }
 
-function readBookings() {
-  try {
-    return (JSON.parse(localStorage.getItem("blue-mountain-house-bookings")) || []).map((booking) => ({
-      ...booking,
-      confirmationCode: booking.confirmationCode || booking.id,
-      totalCents: booking.totalCents ?? Math.round((booking.total || 0) * 100)
-    }));
-  } catch { return []; }
-}
-
-function writeBookings(bookings) {
-  localStorage.setItem("blue-mountain-house-bookings", JSON.stringify(bookings));
+// Guest details and confirmations are never persisted in browser storage. Earlier builds
+// saved bookings to localStorage; that legacy data is discarded rather than read.
+function clearLegacyStorage() {
+  try { localStorage.removeItem("blue-mountain-house-bookings"); } catch { /* storage unavailable */ }
 }
 
 function applyPhotos() {
@@ -64,17 +58,52 @@ function applyPhotos() {
 }
 
 async function initialize() {
+  clearLegacyStorage();
   applyPhotos();
   initializeForms();
+  setBookingEnabled(false);
+  appState.config = await loadConfig();
+  appState.mode = resolveBookingMode(appState.config);
+  renderBookingMode();
+  if (appState.mode === "live") await refreshAvailability();
+}
+
+async function loadConfig() {
   try {
-    appState.config = await fetch("/api/config").then((response) => response.json());
-  } catch {
-    appState.config = { databaseConnected: false, stripeEnabled: false };
+    const response = await fetch("/api/config", { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`Config request failed with status ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Booking configuration could not be loaded", error);
+    return null;
   }
-  document.querySelector("#booking-mode").textContent = appState.config.databaseConnected
-    ? "Secure booking request · No payment is collected at this stage."
-    : "Preview mode · Connect Supabase to send real booking requests. This booking will stay on your device.";
-  if (appState.config.databaseConnected) await refreshAvailability();
+}
+
+// Demo mode is only used when the server explicitly reports demoMode (local DEMO_MODE=true).
+// Any other failure disables booking instead of silently keeping requests on the device.
+function resolveBookingMode(config) {
+  if (!config) return "unavailable";
+  if (config.databaseConnected) return "live";
+  if (config.demoMode === true) return "demo";
+  return "unavailable";
+}
+
+function renderBookingMode() {
+  const status = document.querySelector("#booking-mode");
+  const messages = {
+    live: "Secure booking request · No payment is collected at this stage.",
+    demo: "Local demo mode · Requests stay in this browser tab only and are never sent to the owner.",
+    unavailable: appState.config
+      ? "Online booking isn't available right now. Please contact the host directly to reserve these dates."
+      : "We couldn't reach the booking service. Check your connection and refresh the page to try again."
+  };
+  status.textContent = messages[appState.mode];
+  status.dataset.state = appState.mode;
+  setBookingEnabled(appState.mode === "live" || appState.mode === "demo");
+}
+
+function setBookingEnabled(enabled) {
+  document.querySelector("#booking-submit").disabled = !enabled;
 }
 
 function initializeForms() {
@@ -133,7 +162,8 @@ async function checkAvailability(event) {
   event.preventDefault();
   syncHeroToBooking();
   document.querySelector("#book").scrollIntoView({ behavior: "smooth" });
-  if (appState.config?.databaseConnected) await refreshAvailability();
+  if (appState.mode !== "live" && appState.mode !== "demo") return showToast(document.querySelector("#booking-mode").textContent);
+  if (appState.mode === "live") await refreshAvailability();
   const dates = getBookingDates();
   showToast(hasConflict(dates.checkIn, dates.checkOut) ? "Those dates are unavailable. Try another stay." : "Those dates look available. Complete your details to request the stay.");
 }
@@ -143,12 +173,13 @@ function getBookingDates() {
 }
 
 function hasConflict(checkIn, checkOut) {
-  const localRanges = readBookings().filter((booking) => booking.localOnly && booking.status !== "cancelled").map((booking) => ({ start: booking.checkIn, end: booking.checkOut }));
+  const localRanges = appState.demoBookings.map((booking) => ({ start: booking.checkIn, end: booking.checkOut }));
   return [...appState.unavailable, ...localRanges].some((range) => checkIn < range.end && checkOut > range.start);
 }
 
 async function submitBooking(event) {
   event.preventDefault();
+  if (appState.mode !== "live" && appState.mode !== "demo") return showToast(document.querySelector("#booking-mode").textContent);
   const { checkIn, checkOut } = getBookingDates();
   if (!checkIn || !checkOut || new Date(checkOut) <= new Date(checkIn)) return showToast("Check-out must be after check-in.");
   if (hasConflict(checkIn, checkOut)) return showToast("Those dates overlap an existing reservation or owner block.");
@@ -168,10 +199,10 @@ async function submitBooking(event) {
   button.firstChild.textContent = "Sending request ";
   try {
     let booking;
-    if (appState.config?.databaseConnected) {
+    if (appState.mode === "live") {
       const response = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "The booking request could not be sent");
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "The booking request could not be sent. Please try again.");
       booking = data.booking;
     } else {
       booking = {
@@ -183,8 +214,9 @@ async function submitBooking(event) {
         status: "preview",
         localOnly: true
       };
+      appState.demoBookings = [booking, ...appState.demoBookings].slice(0, 10);
     }
-    writeBookings([booking, ...readBookings().filter((item) => item.id !== booking.id)].slice(0, 10));
+    appState.lastBooking = booking;
     updateManageButton();
     renderConfirmation(booking);
     showLayer(confirmationModal);
@@ -192,17 +224,17 @@ async function submitBooking(event) {
   } catch (error) {
     showToast(error.message);
   } finally {
-    button.disabled = false;
+    button.disabled = appState.mode !== "live" && appState.mode !== "demo";
     button.firstChild.textContent = "Send booking request ";
   }
 }
 
-function renderConfirmation(booking = readBookings()[0]) {
+function renderConfirmation(booking = appState.lastBooking) {
   if (!booking) return;
   const local = booking.localOnly || booking.status === "preview";
-  document.querySelector("#confirmation-eyebrow").textContent = local ? "Preview booking saved" : "Booking request received";
+  document.querySelector("#confirmation-eyebrow").textContent = local ? "Demo request (not sent)" : "Booking request received";
   document.querySelector("#confirmation-copy").textContent = local
-    ? "This preview is stored only on this device. Connect Supabase before accepting real reservations."
+    ? "Local demo mode: this request exists only in this browser tab and was not sent to the owner."
     : "No payment was collected. The owner can now review your request and confirm the stay.";
   document.querySelector("#confirmation-details").innerHTML = `
     <div><span>Confirmation</span><strong>${escapeHtml(booking.confirmationCode || booking.id)}</strong></div>
@@ -217,7 +249,7 @@ function renderConfirmation(booking = readBookings()[0]) {
 }
 
 function updateManageButton() {
-  document.querySelector("[data-manage-booking]").hidden = readBookings().length === 0;
+  document.querySelector("[data-manage-booking]").hidden = !appState.lastBooking;
 }
 
 function openGallery(index) {

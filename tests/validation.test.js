@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { nightsBetween, normalizeBookingInput, normalizeBlockInput } from "../api/_lib/validation.js";
+import { nightsBetween, normalizeBookingInput, normalizeBlockInput } from "../server/validation.js";
 
 test("counts nights without local-time drift", () => {
   assert.equal(nightsBetween("2099-03-07", "2099-03-10"), 3);

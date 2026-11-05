@@ -1,3 +1,4 @@
+// Owner portal entry. Bundled to dist/assets/admin.js. Must not import server/, api/, or secrets.
 const state = { config: null, session: null, bookings: [], blocks: [], calendar: null };
 const currency = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 });
 const dateFormat = new Intl.DateTimeFormat("en-CA", { month: "short", day: "numeric", year: "numeric" });
@@ -64,8 +65,15 @@ async function api(path, options = {}) {
   return data;
 }
 
+async function loadConfig() {
+  let response = null;
+  try { response = await fetch("/api/config", { headers: { Accept: "application/json" } }); } catch { /* network failure */ }
+  if (!response?.ok) throw new Error("The booking server could not be reached. Check your connection and refresh the page to try again.");
+  return response.json();
+}
+
 async function initialize() {
-  state.config = await fetch("/api/config").then((response) => response.json());
+  state.config = await loadConfig();
   const connected = state.config.databaseConnected;
   document.querySelector("#connection-label").textContent = connected ? "Database connected" : "Setup required";
   document.querySelector("#connection-dot").classList.toggle("online", connected);
@@ -245,4 +253,7 @@ function capitalize(value) { return `${value.charAt(0).toUpperCase()}${value.sli
 function escapeHtml(value = "") { return String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]); }
 
 initializeBlockDates();
-initialize().catch((error) => showAuth(error.message));
+initialize().catch((error) => {
+  document.querySelector("#login-form button").disabled = true;
+  showAuth(error.message);
+});

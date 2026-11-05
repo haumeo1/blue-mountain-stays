@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="single.css" />
-    <script src="single.js" type="module"></script>
+    <link rel="stylesheet" href="/single.css" />
+    <script src="/assets/guest.js" type="module"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -166,7 +166,7 @@
             <label>Anything we should know? <span>Optional</span><textarea id="guest-notes" maxlength="1000" rows="3" placeholder="Arrival details, accessibility needs, or a question for the host"></textarea></label>
           </div>
           <div class="price-breakdown" id="price-breakdown"></div>
-          <button class="primary-button" type="submit" id="booking-submit">Send booking request <span>→</span></button>
+          <button class="primary-button" type="submit" id="booking-submit" disabled>Send booking request <span>→</span></button>
           <p class="booking-fine-print" id="booking-mode">Checking secure booking connection…</p>
           <button class="manage-booking" type="button" data-manage-booking hidden>View my latest booking</button>
         </form>

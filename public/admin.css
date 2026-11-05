@@ -1,3 +1,4 @@
+/* Owner portal styles. Copied verbatim to dist/ by scripts/build.mjs. */
 :root { --cream:#f4f1e9; --paper:#fffefa; --ink:#17241f; --forest:#183c32; --sage:#bac7b7; --muted:#6f7773; --line:#d9d8cf; --rust:#bf6647; --shadow:0 24px 70px rgba(23,36,31,.12); }
 * { box-sizing:border-box; }
 html { scroll-behavior:smooth; }

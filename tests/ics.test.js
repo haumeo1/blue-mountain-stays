@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { bookingEvent, blockEvent, createCalendar } from "../api/_lib/ics.js";
+import { bookingEvent, blockEvent, createCalendar } from "../server/integrations/calendar.js";
 
 test("creates a valid all-day booking calendar", () => {
   const calendar = createCalendar([bookingEvent({

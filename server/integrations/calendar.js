@@ -1,3 +1,4 @@
+// iCalendar (RFC 5545) serialization. Server-only.
 function escapeIcs(value = "") {
   return String(value).replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
 }

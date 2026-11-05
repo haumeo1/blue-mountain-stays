@@ -1,3 +1,4 @@
+// Server-only HTTP helpers. Never imported by browser code.
 export function setSecurityHeaders(response) {
   response.setHeader("X-Content-Type-Options", "nosniff");
   response.setHeader("Cache-Control", "no-store");

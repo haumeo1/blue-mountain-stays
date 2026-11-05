@@ -1,6 +1,6 @@
-import { getBaseUrl, handleError, methodNotAllowed, readJsonBody, sendJson } from "./_lib/http.js";
-import { callRpc } from "./_lib/supabase.js";
-import { normalizeBookingInput } from "./_lib/validation.js";
+import { getBaseUrl, handleError, methodNotAllowed, readJsonBody, sendJson } from "../server/http.js";
+import { callRpc } from "../server/integrations/supabase.js";
+import { normalizeBookingInput } from "../server/validation.js";
 
 export default async function handler(request, response) {
   if (request.method !== "POST") return methodNotAllowed(response, ["POST"]);

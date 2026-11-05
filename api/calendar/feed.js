@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
-import { blockEvent, bookingEvent, createCalendar } from "../_lib/ics.js";
-import { getQuery, handleError, methodNotAllowed, setSecurityHeaders } from "../_lib/http.js";
-import { supabaseAdmin } from "../_lib/supabase.js";
+import { getQuery, handleError, methodNotAllowed, setSecurityHeaders } from "../../server/http.js";
+import { blockEvent, bookingEvent, createCalendar } from "../../server/integrations/calendar.js";
+import { supabaseAdmin } from "../../server/integrations/supabase.js";
 
 function tokensMatch(provided, expected) {
   if (!provided || !expected || expected.length < 32) return false;
