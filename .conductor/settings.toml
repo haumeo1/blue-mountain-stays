@@ -1,0 +1,23 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+setup = "chmod +x scripts/with-node.sh && ./scripts/with-node.sh npm install"
+run_mode = "concurrent"
+
+[scripts.run.dev]
+available_in = [ "local" ]
+command = "PORT=$CONDUCTOR_PORT ./scripts/with-node.sh npm run dev"
+default = true
+icon = "play"
+
+[scripts.run.test]
+command = "./scripts/with-node.sh npm test"
+icon = "test-tube"
+
+[scripts.run.check]
+command = "./scripts/with-node.sh npm run check"
+icon = "check"
+
+[scripts.run.build]
+command = "./scripts/with-node.sh npm run build"
+icon = "package"

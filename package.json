@@ -1,0 +1,25 @@
+{
+  "name": "blue-mountain-house",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "npm run build && node scripts/dev.mjs",
+    "check": "node scripts/check.mjs",
+    "test": "node --test \"tests/**/*.test.js\"",
+    "ci": "npm run check && npm test && npm run build"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.119.0",
+    "resend": "6.37.0",
+    "stripe": "18.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.2",
+    "pg": "8.14.1"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}
