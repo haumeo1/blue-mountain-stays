@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex,nofollow" />
-    <meta name="theme-color" content="#183c32" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#173c32" />
     <title>House manager — The Blue Mountain House</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,93 +14,207 @@
     <script src="/assets/admin.js" type="module"></script>
   </head>
   <body>
-    <div class="admin-shell">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="sr-only" id="live" role="status" aria-live="polite"></div>
+
+    <section class="auth-view" id="auth-view" hidden>
+      <div class="auth-card">
+        <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">⌂</span><span>Blue Mountain<span class="brand-sub">HOUSE MANAGEMENT</span></span></a>
+        <p class="eyebrow">PRIVATE OWNER ACCESS</p>
+        <h1>Welcome back.</h1>
+        <p>Enter an approved administrator email and we'll send a secure sign-in link.</p>
+        <form id="login-form">
+          <label>Email address<input id="login-email" type="email" autocomplete="email" required placeholder="owner@example.com" /></label>
+          <button class="primary" type="submit">Email me a sign-in link <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
+        <a class="back-link" href="/">← Return to the property website</a>
+      </div>
+    </section>
+
+    <div class="app" id="app" hidden>
       <aside class="sidebar">
-        <a class="brand" href="/" aria-label="Back to the property website">
-          <span class="brand-mark"><svg viewBox="0 0 42 42"><path d="M7 30 20.8 7 35 30h-8l-6.2-10.4L15 30H7Z"/><path d="m13 31 7.8-13L29 31"/></svg></span>
-          <span>Blue Mountain<br />House manager</span>
-        </a>
-        <nav aria-label="Admin navigation">
-          <button class="active" type="button" data-scroll="overview"><span>01</span> Overview</button>
-          <button type="button" data-scroll="reservations"><span>02</span> Reservations</button>
-          <button type="button" data-scroll="availability"><span>03</span> Availability</button>
-          <button type="button" data-scroll="calendar"><span>04</span> Calendar</button>
+        <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">⌂</span><span>Blue Mountain<span class="brand-sub">HOUSE MANAGEMENT</span></span></a>
+        <p class="nav-label">WORKSPACE</p>
+        <nav aria-label="Admin sections" id="admin-nav">
+          <a href="#overview" data-view="overview"><span aria-hidden="true">▦</span> Overview</a>
+          <a href="#bookings" data-view="bookings"><span aria-hidden="true">▤</span> Bookings</a>
+          <a href="#availability" data-view="availability"><span aria-hidden="true">◫</span> Availability</a>
+          <a href="#pricing" data-view="pricing"><span aria-hidden="true">$</span> Pricing</a>
+          <a href="#property" data-view="property"><span aria-hidden="true">⌂</span> Property</a>
+          <a href="#payments" data-view="payments"><span aria-hidden="true">↔</span> Payments</a>
+          <a href="#notifications" data-view="notifications"><span aria-hidden="true">✉</span> Notifications</a>
+          <a href="#settings" data-view="settings"><span aria-hidden="true">⚙</span> Settings</a>
         </nav>
-        <div class="sidebar-footer">
-          <span class="connection-dot" id="connection-dot"></span>
-          <div><strong id="connection-label">Checking connection</strong><small>Supabase + Vercel</small></div>
+        <div class="sidebar-bottom">
+          <a class="back-link" href="/" target="_blank" rel="noopener">↗ <span>View booking website</span></a>
+          <div class="owner-profile"><span class="avatar" aria-hidden="true">BM</span><div><strong id="admin-email">Owner</strong><small><button class="text-button" id="logout-button" type="button">Sign out</button></small></div></div>
         </div>
       </aside>
 
-      <main>
-        <section class="auth-view" id="auth-view" hidden>
-          <div class="auth-card">
-            <p class="eyebrow">Private owner access</p>
-            <h1>Welcome back.</h1>
-            <p>Enter an approved administrator email. Supabase will send a secure sign-in link—no password to remember.</p>
-            <form id="login-form">
-              <label>Email address<input id="login-email" type="email" autocomplete="email" placeholder="owner@example.com" required /></label>
-              <button type="submit">Email me a sign-in link <span>→</span></button>
+      <main id="main" tabindex="-1">
+        <header class="topbar"><span>Workspace <span class="breadcrumb">/</span> <strong id="breadcrumb">Overview</strong></span><span id="today"></span></header>
+        <div class="page-content">
+          <div class="demo-banner" id="demo-banner" hidden><span class="demo-tag">DEMO</span><p>Demo environment. Data is served by a test backend; no real guests, emails, or payments.</p></div>
+
+          <!-- 1 Overview -->
+          <section class="view" id="view-overview" data-section="overview" aria-labelledby="h-overview">
+            <div class="page-heading"><div><p class="eyebrow">THE BLUE MOUNTAIN HOUSE</p><h1 id="h-overview">A little clarity for your day.</h1></div><button class="secondary" type="button" data-reload="overview">↻ Refresh</button></div>
+            <div class="error" role="alert" data-error hidden></div>
+            <div class="stats" id="overview-stats"></div>
+            <article class="arrival-card" id="overview-arrival"></article>
+          </section>
+
+          <!-- 2 Bookings -->
+          <section class="view" id="view-bookings" data-section="bookings" aria-labelledby="h-bookings" hidden>
+            <div class="page-heading"><div><p class="eyebrow">GUEST STAYS</p><h1 id="h-bookings">Bookings</h1></div></div>
+            <form class="filters" id="booking-filters" role="search">
+              <label class="search"><span class="sr-only">Search bookings</span><input id="booking-search" type="search" placeholder="Search guest, email, or code…" maxlength="100" /></label>
+              <label><span class="sr-only">Status</span><select id="booking-status"><option value="">All statuses</option><option value="pending">Pending</option><option value="payment_due">Payment due</option><option value="confirmed">Confirmed</option><option value="declined">Declined</option><option value="cancelled">Cancelled</option><option value="expired">Expired</option><option value="completed">Completed</option></select></label>
+              <button class="secondary" type="submit">Apply</button>
             </form>
-            <p class="auth-message" id="auth-message" role="status"></p>
-            <a href="/">← Return to the property website</a>
-          </div>
-        </section>
+            <div class="error" role="alert" data-error hidden></div>
+            <div class="data-panel"><div class="table-scroll" tabindex="0" aria-label="Bookings table"><table><thead><tr><th>Guest</th><th>Stay</th><th>Total</th><th>Status</th><th>Payment</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="booking-rows"></tbody></table></div>
+            <div class="pager" id="booking-pager"></div></div>
+          </section>
 
-        <div id="dashboard" hidden>
-          <header class="topbar">
-            <div><p class="eyebrow">Property operations</p><h1>Good <span id="daypart">day</span>.</h1></div>
-            <div class="topbar-actions"><span id="admin-email"></span><button id="refresh-button" type="button">Refresh</button><button id="logout-button" type="button">Sign out</button></div>
-          </header>
-
-          <section class="overview" id="overview">
-            <div class="section-heading"><div><p class="eyebrow">At a glance</p><h2>Your booking picture.</h2></div><p id="today-label"></p></div>
-            <div class="stats-grid">
-              <article><span>Upcoming stays</span><strong id="stat-upcoming">—</strong><small>Pending and confirmed</small></article>
-              <article><span>Confirmed value</span><strong id="stat-revenue">—</strong><small>Before payouts and tax</small></article>
-              <article><span>Next arrival</span><strong id="stat-arrival">—</strong><small id="stat-arrival-note">No stay scheduled</small></article>
-              <article class="accent-stat"><span>Occupancy</span><strong id="stat-occupancy">—</strong><small>Next 30 nights</small></article>
+          <!-- 3 Availability -->
+          <section class="view" id="view-availability" data-section="availability" aria-labelledby="h-availability" hidden>
+            <div class="page-heading"><div><p class="eyebrow">CALENDAR</p><h1 id="h-availability">Availability</h1></div></div>
+            <div class="error" role="alert" data-error hidden></div>
+            <div class="two-col">
+              <div class="data-panel">
+                <div class="month-nav"><button class="secondary" type="button" id="month-prev" aria-label="Previous month">←</button><h2 id="month-title" aria-live="polite"></h2><button class="secondary" type="button" id="month-next" aria-label="Next month">→</button><button class="secondary" type="button" id="month-today">Today</button></div>
+                <div class="legend"><span><i class="swatch booking"></i>Booking</span><span><i class="swatch hold"></i>Hold / pending</span><span><i class="swatch block"></i>Owner block</span></div>
+                <div class="month-grid" id="month-grid" role="grid" aria-labelledby="month-title"></div>
+                <p class="form-note">Ranges use an exclusive end date: a stay ending on the 12th leaves the night of the 12th free.</p>
+              </div>
+              <div class="data-panel">
+                <h2>Block dates</h2>
+                <form id="block-form" class="stack">
+                  <div class="form-grid"><label>First blocked night<input id="block-start" type="date" required /></label><label>End (exclusive)<input id="block-end" type="date" required /></label></div>
+                  <label>Reason<input id="block-reason" maxlength="200" placeholder="Maintenance, owner stay…" /></label>
+                  <button class="primary" type="submit">Block these dates</button>
+                </form>
+                <h3 class="list-title">Ranges this month</h3>
+                <ul class="range-list" id="range-list"></ul>
+              </div>
             </div>
           </section>
 
-          <section class="panel" id="reservations">
-            <div class="panel-heading">
-              <div><p class="eyebrow">Guest stays</p><h2>Reservations</h2></div>
-              <label class="filter-label">Status<select id="status-filter"><option value="">All bookings</option><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="cancelled">Cancelled</option><option value="completed">Completed</option></select></label>
-            </div>
-            <div class="table-wrap"><table><thead><tr><th>Guest</th><th>Stay</th><th>Value</th><th>Payment</th><th>Status</th><th>Calendar</th></tr></thead><tbody id="booking-rows"></tbody></table></div>
-            <div class="empty-state" id="booking-empty" hidden>No reservations match this view.</div>
+          <!-- 4 Pricing -->
+          <section class="view" id="view-pricing" data-section="pricing" aria-labelledby="h-pricing" hidden>
+            <div class="page-heading"><div><p class="eyebrow">RATES</p><h1 id="h-pricing">Pricing</h1><p>Changes apply to new quotes only. Existing requests and bookings keep their quoted price.</p></div></div>
+            <div class="error" role="alert" data-error hidden></div>
+            <form class="data-panel stack" id="pricing-form">
+              <div class="form-grid">
+                <label>Nightly rate<input name="nightly_rate" inputmode="decimal" pattern="\d+(\.\d{1,2})?" required /></label>
+                <label>Cleaning fee<input name="cleaning_fee" inputmode="decimal" pattern="\d+(\.\d{1,2})?" required /></label>
+                <label>Guest service fee (%)<input name="service_pct" inputmode="decimal" pattern="\d{1,3}(\.\d{1,2})?" required /></label>
+                <label>Tax (%) <span class="optional" id="tax-status"></span><input name="tax_pct" inputmode="decimal" pattern="\d{1,3}(\.\d{1,2})?" required /></label>
+                <label>Minimum nights<input name="min_nights" type="number" min="1" max="365" required /></label>
+                <label>Maximum nights<input name="max_nights" type="number" min="1" max="365" required /></label>
+                <label>Maximum guests<input name="max_guests" type="number" min="1" max="100" required /></label>
+                <label class="checkbox full-width"><input name="tax_configured" type="checkbox" /> I confirm the tax rate above is correct for this property (including 0% if no tax applies).</label>
+              </div>
+              <p class="form-note">Amounts are in the property currency (CAD or USD, set under Settings).</p>
+              <fieldset><legend>Seasonal nightly overrides</legend><div id="override-rows" class="repeat-list"></div><button class="secondary" type="button" id="add-override">＋ Add override</button></fieldset>
+              <div class="form-actions"><button class="secondary" type="button" data-reload="pricing">Discard changes</button><button class="primary" type="submit">Save pricing</button></div>
+            </form>
           </section>
 
-          <section class="availability-grid" id="availability">
-            <div class="panel block-form-panel">
-              <p class="eyebrow">Owner dates</p><h2>Block availability</h2>
-              <p>Reserve dates for maintenance or personal use. New guests will see them as unavailable.</p>
-              <form id="block-form">
-                <div class="date-row"><label>Start<input id="block-start" type="date" required /></label><label>End<input id="block-end" type="date" required /></label></div>
-                <label>Reason<input id="block-reason" maxlength="200" placeholder="Maintenance, owner stay…" /></label>
-                <button type="submit">Block these dates <span>＋</span></button>
-              </form>
-            </div>
-            <div class="panel">
-              <div class="panel-heading compact"><div><p class="eyebrow">Unavailable</p><h2>Owner blocks</h2></div></div>
-              <div class="block-list" id="block-list"></div>
-              <div class="empty-state" id="block-empty" hidden>No owner blocks yet.</div>
+          <!-- 5 Property -->
+          <section class="view" id="view-property" data-section="property" aria-labelledby="h-property" hidden>
+            <div class="page-heading"><div><p class="eyebrow">GUEST WEBSITE</p><h1 id="h-property">Property content</h1><p id="content-state"></p></div><div class="button-row"><button class="secondary" type="button" id="preview-toggle" aria-expanded="false">Preview draft</button><button class="primary" type="button" id="publish-button" data-needs-load="content-form">Publish</button></div></div>
+            <div class="error" role="alert" data-error hidden></div>
+            <form class="data-panel stack" id="content-form">
+              <div class="form-grid">
+                <label class="full-width">Property title<input name="title" maxlength="120" /></label>
+                <label class="full-width">Hero headline<input name="hero_title" maxlength="160" /></label>
+                <label class="full-width">Description<textarea name="description" rows="4" maxlength="5000"></textarea></label>
+              </div>
+              <fieldset><legend>Photos</legend><div id="photo-rows" class="repeat-list"></div>
+                <label class="upload">Upload photo (JPEG, PNG, WebP · max 10 MB)<input id="photo-file" type="file" accept="image/jpeg,image/png,image/webp" /></label></fieldset>
+              <fieldset><legend>Amenities</legend><div id="amenity-rows" class="repeat-list"></div><button class="secondary" type="button" data-add-row="amenities">＋ Add amenity</button></fieldset>
+              <fieldset><legend>FAQ</legend><div id="faq-rows" class="repeat-list"></div><button class="secondary" type="button" data-add-row="faq">＋ Add question</button></fieldset>
+              <fieldset><legend>Policies</legend><div class="form-grid">
+                <label class="full-width">Cancellation policy<textarea name="cancellation" rows="3" maxlength="4000"></textarea></label>
+                <label class="full-width">House rules<textarea name="house_rules" rows="3" maxlength="4000"></textarea></label>
+                <label class="checkbox full-width"><input name="policies_confirmed" type="checkbox" /> I confirm these cancellation and house-rule policies are the ones guests should rely on once published.</label></div></fieldset>
+              <fieldset><legend>Contact</legend><div class="form-grid">
+                <label>Contact email<input name="contact_email" type="email" maxlength="254" /></label>
+                <label>Contact phone<input name="contact_phone" type="tel" maxlength="40" /></label></div></fieldset>
+              <div class="form-actions"><button class="secondary" type="button" data-reload="property">Discard changes</button><button class="primary" type="submit">Save draft</button></div>
+            </form>
+            <section class="preview" id="content-preview" aria-label="Draft preview" hidden></section>
+          </section>
+
+          <!-- 6 Payments -->
+          <section class="view" id="view-payments" data-section="payments" aria-labelledby="h-payments" hidden>
+            <div class="page-heading"><div><p class="eyebrow">STRIPE</p><h1 id="h-payments">Payments</h1><p>Payment status is set by Stripe webhooks. Refunds are sent through Stripe.</p></div><button class="secondary" type="button" data-reload="payments">↻ Refresh</button></div>
+            <div class="error" role="alert" data-error hidden></div>
+            <div class="data-panel"><div class="table-scroll" tabindex="0" aria-label="Payments table"><table><thead><tr><th>Booking</th><th>Total</th><th>Status</th><th>Refunded</th><th>Stripe</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="payment-rows"></tbody></table></div><div class="pager" id="payment-pager"></div></div>
+          </section>
+
+          <!-- 7 Notifications -->
+          <section class="view" id="view-notifications" data-section="notifications" aria-labelledby="h-notifications" hidden>
+            <div class="page-heading"><div><p class="eyebrow">DELIVERY</p><h1 id="h-notifications">Notifications &amp; calendar</h1></div><div class="button-row"><button class="secondary" type="button" id="retry-events">Retry failed payment events</button><button class="secondary" type="button" id="run-jobs">Run pending jobs</button><button class="secondary" type="button" data-reload="notifications">↻ Refresh</button></div></div>
+            <div class="error" role="alert" data-error hidden></div>
+            <div class="data-panel"><div class="table-scroll" tabindex="0" aria-label="Notifications table"><table><thead><tr><th>Template</th><th>Recipient</th><th>Status</th><th>Attempts</th><th>Last error</th><th>Created</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="notification-rows"></tbody></table></div><div class="pager" id="notification-pager"></div></div>
+            <div class="data-panel calendar-feed">
+              <div><h2>Private calendar feed</h2><p id="calendar-state" class="form-note"></p></div>
+              <div id="calendar-url-box" hidden><label>Feed URL (shown once)<input id="calendar-url" readonly /></label><div class="button-row"><button class="secondary" type="button" id="copy-calendar">Copy link</button><a class="secondary" id="webcal-link" href="#">Open in calendar app</a></div><p class="form-note">Treat this like a password. Anyone with it can see reservation names and dates.</p></div>
+              <div class="button-row"><button class="primary" type="button" id="rotate-calendar">Create new link</button><button class="secondary danger" type="button" id="revoke-calendar">Revoke link</button></div>
             </div>
           </section>
 
-          <section class="calendar-panel" id="calendar">
-            <div><p class="eyebrow light">Live calendar connection</p><h2>Bookings in your<br />own calendar app.</h2><p>Subscribe once in Apple Calendar, Google Calendar, or Outlook. New reservations and owner blocks will appear automatically when your calendar refreshes the feed.</p></div>
-            <div class="calendar-card">
-              <span>Private iCalendar feed</span>
-              <code id="calendar-url">Loading secure link…</code>
-              <div><a id="subscribe-calendar" href="#">Open in calendar app</a><button id="copy-calendar" type="button">Copy link</button></div>
-              <small>Treat this link like a password. Anyone with it can see reservation names and dates.</small>
-            </div>
+          <!-- 8 Settings -->
+          <section class="view" id="view-settings" data-section="settings" aria-labelledby="h-settings" hidden>
+            <div class="page-heading"><div><p class="eyebrow">CONFIGURATION</p><h1 id="h-settings">Settings</h1></div></div>
+            <div class="error" role="alert" data-error hidden></div>
+            <form class="data-panel stack" id="settings-form">
+              <div class="form-grid">
+                <label>Time zone<select name="timezone"><option value="America/Toronto">America/Toronto</option></select></label>
+                <label>Currency<select name="currency"><option value="CAD">CAD</option><option value="USD">USD</option></select></label>
+                <label>Owner notification email<input name="owner_email" type="email" maxlength="254" required /></label>
+                <label class="checkbox"><input name="booking_enabled" type="checkbox" /> Accept new booking requests</label>
+              </div>
+              <p class="form-note">Currency can't be changed once a booking exists; the server will reject the change.</p>
+              <div class="form-actions"><button class="primary" type="submit">Save settings</button></div>
+            </form>
+            <div class="data-panel"><div class="section-title"><h2>Service health</h2><button class="secondary" type="button" id="health-refresh">Check again</button></div><ul class="health-list" id="health-list"></ul></div>
+            <div class="data-panel"><h2>Activity log</h2><div class="table-scroll" tabindex="0" aria-label="Activity log"><table><thead><tr><th>When</th><th>Action</th><th>Actor</th><th>Booking</th><th>Details</th></tr></thead><tbody id="activity-rows"></tbody></table></div><div class="pager" id="activity-pager"></div></div>
           </section>
         </div>
       </main>
     </div>
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <dialog id="booking-dialog" aria-labelledby="booking-dialog-title">
+      <div class="dialog-heading"><div><p class="eyebrow" id="booking-dialog-code">RESERVATION</p><h2 id="booking-dialog-title">Booking</h2></div><button class="icon-button" type="button" data-close aria-label="Close">×</button></div>
+      <div class="error" role="alert" data-error hidden></div>
+      <div id="booking-dialog-body"></div>
+    </dialog>
+
+    <dialog id="refund-dialog" aria-labelledby="refund-title">
+      <div class="dialog-heading"><div><p class="eyebrow" id="refund-context">REFUND</p><h2 id="refund-title">Issue refund</h2></div><button class="icon-button" type="button" data-close aria-label="Close">×</button></div>
+      <form id="refund-form" class="stack">
+        <label>Amount<input name="amount" inputmode="decimal" pattern="\d+(\.\d{1,2})?" required placeholder="0.00" /></label>
+        <label>Reason<input name="reason" maxlength="300" required /></label>
+        <p class="form-note" id="refund-limit"></p>
+        <div class="error" role="alert" data-error hidden></div>
+        <div class="form-actions"><button class="secondary" type="button" data-close>Cancel</button><button class="primary" type="submit">Send refund via Stripe</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="confirm-dialog" aria-labelledby="confirm-title">
+      <form method="dialog" class="stack">
+        <h2 id="confirm-title">Are you sure?</h2>
+        <p id="confirm-message"></p>
+        <label id="confirm-reason-label" hidden>Reason<input id="confirm-reason" maxlength="300" /></label>
+        <div class="form-actions"><button class="secondary" value="cancel" type="submit">Go back</button><button class="primary" value="ok" type="submit" id="confirm-ok">Confirm</button></div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" aria-hidden="true"></div>
   </body>
 </html>

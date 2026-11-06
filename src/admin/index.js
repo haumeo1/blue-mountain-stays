@@ -1,259 +1,150 @@
 // Owner portal entry. Bundled to dist/assets/admin.js. Must not import server/, api/, or secrets.
-const state = { config: null, session: null, bookings: [], blocks: [], calendar: null };
-const currency = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 });
-const dateFormat = new Intl.DateTimeFormat("en-CA", { month: "short", day: "numeric", year: "numeric" });
-const authView = document.querySelector("#auth-view");
-const dashboard = document.querySelector("#dashboard");
-const toast = document.querySelector("#toast");
-let toastTimer;
+// Protected data is fetched only after Supabase reports a session; the server authorises every call.
+import { loadConfig } from "../shared/api.js";
+import { initAuth, currentSession, sendMagicLink, signOut } from "./client.js";
+import { $, $$, announce, busy } from "./ui.js";
+import { loadOverview, loadBookings, openBooking, initBookings } from "./bookings.js";
+import { loadAvailability, initAvailability } from "./availability.js";
+import { loadPricing, initPricing } from "./pricing.js";
+import { loadContent, initContent } from "./content.js";
+import { loadPayments, initPayments } from "./payments.js";
+import { loadNotifications, initNotifications, loadSettings, initSettings } from "./ops.js";
 
-function dateOffset(days) {
-  const date = new Date();
-  date.setHours(12, 0, 0, 0);
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+const VIEWS = {
+  overview: ["Overview", loadOverview],
+  bookings: ["Bookings", loadBookings],
+  availability: ["Availability", loadAvailability],
+  pricing: ["Pricing", loadPricing],
+  property: ["Property", loadContent],
+  payments: ["Payments", loadPayments],
+  notifications: ["Notifications", loadNotifications],
+  settings: ["Settings", loadSettings]
+};
+// rejectedUser: a user the API refused (401/403) in this page; late auth callbacks for them are ignored.
+const state = { signedIn: false, initialised: false, view: null, rejectedUser: null };
+
+function currentView() {
+  const name = location.hash.slice(1);
+  return VIEWS[name] ? name : "overview";
 }
 
-function readSession() {
-  try { return JSON.parse(sessionStorage.getItem("bmh-admin-session")); } catch { return null; }
+function showView(name, { reload = true } = {}) {
+  state.view = name;
+  for (const key of Object.keys(VIEWS)) $(`#view-${key}`).hidden = key !== name;
+  $$("#admin-nav a").forEach((a) => { if (a.dataset.view === name) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  $("#breadcrumb").textContent = VIEWS[name][0];
+  $("#admin-nav a[aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  if (reload && state.signedIn) VIEWS[name][1]();
 }
 
-function saveSession(session) {
-  state.session = session;
-  if (session) sessionStorage.setItem("bmh-admin-session", JSON.stringify(session));
-  else sessionStorage.removeItem("bmh-admin-session");
+function showLogin(message = "") {
+  state.signedIn = false;
+  $("#app").hidden = true;
+  $("#auth-view").hidden = false;
+  $("#auth-message").textContent = message;
+  for (const dialog of $$("dialog")) if (dialog.open) dialog.close();
 }
 
-function captureMagicLink() {
-  const params = new URLSearchParams(location.hash.slice(1));
-  if (!params.get("access_token")) return;
-  saveSession({
-    accessToken: params.get("access_token"),
-    refreshToken: params.get("refresh_token"),
-    expiresAt: Date.now() + Number(params.get("expires_in") || 3600) * 1000
-  });
-  history.replaceState(null, "", location.pathname);
-}
-
-async function refreshSessionIfNeeded() {
-  if (!state.session?.refreshToken || state.session.expiresAt - Date.now() > 60_000) return;
-  const response = await fetch(`${state.config.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
-    method: "POST",
-    headers: { apikey: state.config.supabasePublishableKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: state.session.refreshToken })
-  });
-  if (!response.ok) throw new Error("Your session has expired. Please sign in again.");
-  const data = await response.json();
-  saveSession({ accessToken: data.access_token, refreshToken: data.refresh_token, expiresAt: Date.now() + data.expires_in * 1000 });
-}
-
-async function api(path, options = {}) {
-  await refreshSessionIfNeeded();
-  const response = await fetch(path, {
-    ...options,
-    headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...(state.session ? { Authorization: `Bearer ${state.session.accessToken}` } : {}),
-      ...(options.headers || {})
-    }
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    if (response.status === 401) saveSession(null);
-    throw new Error(data.error || "Request failed");
+async function enterApp(session) {
+  if (state.signedIn || failing) return;
+  if (state.rejectedUser && session?.user?.id === state.rejectedUser) return;
+  // A deferred auth callback may arrive after sign-out; re-check the live session first.
+  const live = await currentSession();
+  if (!live || live.user?.id !== session?.user?.id || state.signedIn || failing) return;
+  state.signedIn = true;
+  $("#admin-email").textContent = session.user?.email || "Owner";
+  $("#auth-view").hidden = true;
+  $("#app").hidden = false;
+  if (!state.initialised) {
+    state.initialised = true;
+    initBookings(); initAvailability(); initPricing(); initContent(); initPayments(); initNotifications(); initSettings();
   }
-  return data;
+  showView(currentView());
 }
 
-async function loadConfig() {
-  let response = null;
-  try { response = await fetch("/api/config", { headers: { Accept: "application/json" } }); } catch { /* network failure */ }
-  if (!response?.ok) throw new Error("The booking server could not be reached. Check your connection and refresh the page to try again.");
-  return response.json();
+let failing = false;
+async function handleAuthFailure(error) {
+  if (failing || !state.signedIn) return;
+  failing = true;
+  const session = await currentSession();
+  if (session?.user?.id) state.rejectedUser = session.user.id;
+  let message = error.status === 403 ? "This account isn't an approved administrator." : "Your session has expired. Please sign in again.";
+  showLogin(message);
+  // The token was rejected, so a server-side sign-out may fail; clearing this tab's session is what matters.
+  const cleared = await signOut({ scope: "local" });
+  if (!cleared) message += " We couldn't clear the saved session in this tab — close the tab to finish signing out.";
+  showLogin(message);
+  failing = false;
+}
+
+function readAuthErrorFromUrl() {
+  const params = new URLSearchParams(location.hash.slice(1) || location.search.slice(1));
+  if (!params.get("error") && !params.get("error_code")) return "";
+  history.replaceState(null, "", location.pathname);
+  return params.get("error_code") === "otp_expired" ? "That sign-in link has expired. Request a new one." : "That sign-in link couldn't be used. Request a new one.";
 }
 
 async function initialize() {
-  state.config = await loadConfig();
-  const connected = state.config.databaseConnected;
-  document.querySelector("#connection-label").textContent = connected ? "Database connected" : "Setup required";
-  document.querySelector("#connection-dot").classList.toggle("online", connected);
-  captureMagicLink();
-  state.session = readSession();
-  if (!connected) {
-    showAuth("Supabase is not configured. Add the environment variables from .env.example to continue.");
-    document.querySelector("#login-form button").disabled = true;
+  const linkError = readAuthErrorFromUrl();
+  let config;
+  try { config = await loadConfig(); }
+  catch (error) {
+    showLogin(error.message || "The server couldn't be reached. Refresh to try again.");
+    $("#login-form button").disabled = true;
     return;
   }
-  if (!state.session) return showAuth();
-  await loadDashboard();
-}
-
-function showAuth(message = "") {
-  authView.hidden = false;
-  dashboard.hidden = true;
-  document.querySelector("#auth-message").textContent = message;
-}
-
-async function loadDashboard() {
+  $("#demo-banner").hidden = config.demoMode !== true;
   try {
-    const status = document.querySelector("#status-filter").value;
-    const [bookingData, blockData, calendarData] = await Promise.all([
-      api(`/api/admin/bookings${status ? `?status=${status}` : ""}`),
-      api("/api/admin/blocks"),
-      api("/api/admin/calendar").catch(() => null)
-    ]);
-    state.bookings = bookingData.bookings;
-    state.blocks = blockData.blocks;
-    state.calendar = calendarData;
-    authView.hidden = true;
-    dashboard.hidden = false;
-    renderDashboard();
-  } catch (error) {
-    showAuth(error.message);
-  }
-}
-
-function renderDashboard() {
-  const now = new Date();
-  const hour = now.getHours();
-  document.querySelector("#daypart").textContent = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
-  document.querySelector("#today-label").textContent = new Intl.DateTimeFormat("en-CA", { weekday: "long", month: "long", day: "numeric" }).format(now);
-  renderStats();
-  renderBookings();
-  renderBlocks();
-  renderCalendar();
-}
-
-function renderStats() {
-  const today = dateOffset(0);
-  const upcoming = state.bookings.filter((booking) => booking.check_out > today && ["pending", "confirmed"].includes(booking.status));
-  const confirmedValue = upcoming.filter((booking) => booking.status === "confirmed").reduce((sum, booking) => sum + booking.total_cents, 0);
-  const next = [...upcoming].sort((a, b) => a.check_in.localeCompare(b.check_in))[0];
-  const horizon = dateOffset(30);
-  const occupiedNights = upcoming.filter((booking) => booking.status === "confirmed").reduce((sum, booking) => {
-    const start = booking.check_in < today ? today : booking.check_in;
-    const end = booking.check_out > horizon ? horizon : booking.check_out;
-    return sum + Math.max(0, daysBetween(start, end));
-  }, 0);
-  document.querySelector("#stat-upcoming").textContent = upcoming.length;
-  document.querySelector("#stat-revenue").textContent = currency.format(confirmedValue / 100);
-  document.querySelector("#stat-arrival").textContent = next ? dateFormat.format(new Date(`${next.check_in}T12:00:00`)) : "None";
-  document.querySelector("#stat-arrival-note").textContent = next ? `${next.guest_name} · ${next.guest_count} guests` : "No stay scheduled";
-  document.querySelector("#stat-occupancy").textContent = `${Math.min(100, Math.round((occupiedNights / 30) * 100))}%`;
-}
-
-function renderBookings() {
-  const rows = document.querySelector("#booking-rows");
-  document.querySelector("#booking-empty").hidden = state.bookings.length > 0;
-  rows.innerHTML = state.bookings.map((booking) => `
-    <tr>
-      <td><strong>${escapeHtml(booking.guest_name)}</strong><span>${escapeHtml(booking.guest_email)}${booking.guest_phone ? ` · ${escapeHtml(booking.guest_phone)}` : ""}</span></td>
-      <td><strong>${formatDate(booking.check_in)} – ${formatDate(booking.check_out)}</strong><span>${booking.guest_count} guests · ${escapeHtml(booking.confirmation_code)}</span></td>
-      <td><strong>${currency.format(booking.total_cents / 100)}</strong><span>${booking.nights} nights</span></td>
-      <td><span class="payment-pill">${escapeHtml(booking.payment_status.replaceAll("_", " "))}</span></td>
-      <td><select class="status-select" data-booking-status="${booking.id}" aria-label="Status for ${escapeHtml(booking.confirmation_code)}">${["pending", "confirmed", "cancelled", "completed"].map((status) => `<option value="${status}" ${booking.status === status ? "selected" : ""}>${capitalize(status)}</option>`).join("")}</select></td>
-      <td><a class="calendar-link" href="/api/calendar/booking?id=${encodeURIComponent(booking.id)}&token=${encodeURIComponent(booking.calendar_token)}">Download .ics</a></td>
-    </tr>
-  `).join("");
-}
-
-function renderBlocks() {
-  const list = document.querySelector("#block-list");
-  document.querySelector("#block-empty").hidden = state.blocks.length > 0;
-  list.innerHTML = state.blocks.map((block) => `
-    <div class="block-row"><strong>${formatDate(block.start_date)} – ${formatDate(block.end_date)}</strong><span>${escapeHtml(block.reason)}</span><button type="button" data-delete-block="${block.id}">Remove</button></div>
-  `).join("");
-}
-
-function renderCalendar() {
-  const code = document.querySelector("#calendar-url");
-  const link = document.querySelector("#subscribe-calendar");
-  if (!state.calendar) {
-    code.textContent = "Add CALENDAR_FEED_TOKEN to enable the private feed";
-    link.removeAttribute("href");
-    link.setAttribute("aria-disabled", "true");
-    return;
-  }
-  code.textContent = state.calendar.httpUrl;
-  link.href = state.calendar.webcalUrl;
-}
-
-document.querySelector("#login-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const email = document.querySelector("#login-email").value.trim();
-  const message = document.querySelector("#auth-message");
-  message.textContent = "Sending your secure link…";
-  try {
-    const redirectTo = encodeURIComponent(`${location.origin}/admin`);
-    const response = await fetch(`${state.config.supabaseUrl}/auth/v1/otp?redirect_to=${redirectTo}`, {
-      method: "POST",
-      headers: { apikey: state.config.supabasePublishableKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ email, create_user: false, gotrue_meta_security: {} })
+    initAuth(config, {
+      onSession: (event, session) => {
+        // A fresh sign-in (new magic link) lifts the rejection; token refreshes for a rejected user don't.
+        if (event === "SIGNED_IN" && session?.user?.id !== state.rejectedUser) state.rejectedUser = null;
+        if (session) enterApp(session);
+        else if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") { if (state.signedIn) showLogin("You have been signed out."); else showLogin($("#auth-message").textContent); }
+      },
+      onAuthFailure: handleAuthFailure
     });
-    if (!response.ok) throw new Error("Could not send the sign-in email.");
-    message.textContent = "Check your inbox for the sign-in link. Only approved admin accounts can open the dashboard.";
-  } catch (error) { message.textContent = error.message; }
-});
-
-document.querySelector("#status-filter").addEventListener("change", loadDashboard);
-document.querySelector("#refresh-button").addEventListener("click", async () => { await loadDashboard(); showToast("Dashboard refreshed"); });
-document.querySelector("#logout-button").addEventListener("click", () => { saveSession(null); showAuth("You have been signed out."); });
-
-document.querySelector("#block-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  try {
-    await api("/api/admin/blocks", { method: "POST", body: JSON.stringify({ startDate: document.querySelector("#block-start").value, endDate: document.querySelector("#block-end").value, reason: document.querySelector("#block-reason").value }) });
-    event.target.reset();
-    initializeBlockDates();
-    await loadDashboard();
-    showToast("Dates blocked");
-  } catch (error) { showToast(error.message); }
-});
-
-document.addEventListener("change", async (event) => {
-  const select = event.target.closest("[data-booking-status]");
-  if (!select) return;
-  try {
-    await api("/api/admin/bookings", { method: "PATCH", body: JSON.stringify({ id: select.dataset.bookingStatus, status: select.value }) });
-    await loadDashboard();
-    showToast("Reservation updated");
-  } catch (error) { showToast(error.message); await loadDashboard(); }
-});
-
-document.addEventListener("click", async (event) => {
-  const scrollButton = event.target.closest("[data-scroll]");
-  if (scrollButton) document.querySelector(`#${scrollButton.dataset.scroll}`).scrollIntoView({ behavior: "smooth" });
-  const deleteButton = event.target.closest("[data-delete-block]");
-  if (deleteButton) {
-    try {
-      await api(`/api/admin/blocks?id=${encodeURIComponent(deleteButton.dataset.deleteBlock)}`, { method: "DELETE" });
-      await loadDashboard();
-      showToast("Date block removed");
-    } catch (error) { showToast(error.message); }
+  } catch (error) {
+    showLogin(error.message);
+    $("#login-form button").disabled = true;
+    return;
   }
-});
-
-document.querySelector("#copy-calendar").addEventListener("click", async () => {
-  if (!state.calendar) return showToast("Calendar feed is not configured");
-  await navigator.clipboard.writeText(state.calendar.httpUrl);
-  showToast("Private calendar link copied");
-});
-
-function initializeBlockDates() {
-  document.querySelector("#block-start").min = dateOffset(0);
-  document.querySelector("#block-end").min = dateOffset(1);
-  document.querySelector("#block-start").value = dateOffset(7);
-  document.querySelector("#block-end").value = dateOffset(8);
+  const session = await currentSession();
+  if (session) await enterApp(session);
+  else showLogin(linkError);
+  if (location.hash.includes("access_token")) history.replaceState(null, "", `${location.pathname}#overview`);
 }
 
-function showToast(message) { toast.textContent = message; toast.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove("show"), 2800); }
-function formatDate(value) { return dateFormat.format(new Date(`${value}T12:00:00`)); }
-function daysBetween(start, end) { return Math.round((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86_400_000); }
-function capitalize(value) { return `${value.charAt(0).toUpperCase()}${value.slice(1)}`; }
-function escapeHtml(value = "") { return String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]); }
-
-initializeBlockDates();
-initialize().catch((error) => {
-  document.querySelector("#login-form button").disabled = true;
-  showAuth(error.message);
+$("#login-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const form = event.target;
+  const email = $("#login-email").value.trim();
+  busy(form, async () => {
+    $("#auth-message").textContent = "Sending your secure link…";
+    try {
+      await sendMagicLink(email);
+      $("#auth-message").textContent = "Check your inbox for the sign-in link. Only approved admin accounts can open the dashboard.";
+    } catch (error) { $("#auth-message").textContent = error.message; }
+  });
 });
+
+$("#logout-button").addEventListener("click", async (event) => {
+  const cleared = await busy(event.currentTarget, () => signOut());
+  showLogin(cleared === false
+    ? "We couldn't clear your session in this tab. Close the tab to finish signing out."
+    : "You have been signed out.");
+});
+
+window.addEventListener("hashchange", () => { if (state.signedIn && VIEWS[location.hash.slice(1)]) { showView(currentView()); $("#main").focus({ preventScroll: true }); } });
+
+document.addEventListener("click", (event) => {
+  const reload = event.target.closest("[data-reload]");
+  if (reload && state.signedIn) { busy(reload, () => VIEWS[reload.dataset.reload][1]()).then(() => announce("Refreshed.")); }
+  const open = event.target.closest("[data-open-booking]");
+  if (open && state.signedIn) openBooking(open.dataset.openBooking);
+  const close = event.target.closest("dialog [data-close]");
+  if (close) close.closest("dialog").close();
+});
+
+$("#today").textContent = new Intl.DateTimeFormat("en-CA", { weekday: "long", month: "long", day: "numeric" }).format(new Date());
+initialize();

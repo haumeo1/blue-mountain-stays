@@ -1,279 +1,413 @@
 // Guest site entry. Bundled to dist/assets/guest.js. Must not import server/, api/, or secrets.
-// PROPERTY CONFIGURATION
-// Replace these placeholder photo URLs later. Keep the same order:
-// 1 exterior/hero, 2 living room, 3 kitchen, 4 bedroom, 5 outdoor space, 6 lifestyle/detail.
-const PROPERTY = {
-  name: "The Blue Mountain House",
-  location: "The Blue Mountains, Ontario",
-  nightlyRate: 425,
-  cleaningFee: 145,
-  serviceRate: 0.08,
-  maxGuests: 8,
-  photos: [
-    { url: "https://images.unsplash.com/photo-1601918774946-25832a4be0d6?auto=format&fit=crop&w=1800&q=88", alt: "Exterior of the Blue Mountain house in a forest setting" },
-    { url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=86", alt: "Bright living room with comfortable seating" },
-    { url: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1200&q=86", alt: "Modern kitchen and dining area" },
-    { url: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1200&q=86", alt: "Warm, peaceful bedroom" },
-    { url: "https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1200&q=86", alt: "House exterior and outdoor area" },
-    { url: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1400&q=86", alt: "Relaxing interior detail" }
-  ]
-};
+// All prices come from POST /api/quotes; the browser never calculates a live price.
+import { apiFetch, ApiError } from "../shared/api.js";
+import { formatMoney, formatDate, addDays, isIsoDate, safeHttpsUrl, newIdempotencyKey } from "../shared/format.js";
 
-const currency = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 });
-const dateFormat = new Intl.DateTimeFormat("en-CA", { month: "short", day: "numeric", year: "numeric" });
-const bookingForm = document.querySelector("#booking-form");
-const confirmationModal = document.querySelector("#confirmation-modal");
-const lightbox = document.querySelector("#lightbox");
-const toast = document.querySelector("#toast");
-// mode: "loading" | "live" | "demo" | "unavailable". Booking details are kept in memory only.
-const appState = { config: null, mode: "loading", unavailable: [], demoBookings: [], lastBooking: null };
+// Default photography (placeholder). Published content photos replace these. Order:
+// 1 exterior/hero, 2 living room, 3 kitchen, 4 bedroom, 5 outdoor space, 6 lifestyle/detail.
+const DEFAULT_PHOTOS = [
+  { url: "https://images.unsplash.com/photo-1601918774946-25832a4be0d6?auto=format&fit=crop&w=1800&q=88", alt: "Exterior of the Blue Mountain house in a forest setting" },
+  { url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=86", alt: "Bright living room with comfortable seating" },
+  { url: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1200&q=86", alt: "Modern kitchen and dining area" },
+  { url: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1200&q=86", alt: "Warm, peaceful bedroom" },
+  { url: "https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1200&q=86", alt: "House exterior and outdoor area" },
+  { url: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1400&q=86", alt: "Relaxing interior detail" }
+];
+
+const $ = (selector) => document.querySelector(selector);
+const lightbox = $("#lightbox");
+const confirmationModal = $("#confirmation-modal");
+const toast = $("#toast");
+
+const DEFAULT_TIMEZONE = "America/Toronto";
+
+const state = {
+  mode: "loading", // loading | live | demo | unavailable
+  maxGuests: 8,
+  timezone: DEFAULT_TIMEZONE,
+  photos: DEFAULT_PHOTOS,
+  quoteExpiryTimer: 0,
+  quote: null,
+  quoteSeq: 0,
+  quoteTimer: 0,
+  submitting: false,
+  idempotency: { fingerprint: "", key: "" },
+  lastBooking: null
+};
 let galleryIndex = 0;
 let toastTimer;
 
-function dateOffset(days) {
-  const date = new Date();
-  date.setHours(12, 0, 0, 0);
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+function el(tag, props = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(props)) {
+    if (key === "className") node.className = value;
+    else if (key === "text") node.textContent = value;
+    else node.setAttribute(key, value);
+  }
+  for (const child of children) if (child != null) node.append(child);
+  return node;
 }
 
-// Guest details and confirmations are never persisted in browser storage. Earlier builds
-// saved bookings to localStorage; that legacy data is discarded rather than read.
 function clearLegacyStorage() {
   try { localStorage.removeItem("blue-mountain-house-bookings"); } catch { /* storage unavailable */ }
 }
 
+// ---------- Content ----------
+// Photos fill tiles in order; tiles without a photo are hidden (no wrap-around, never modulo zero).
+// With no photos at all, the hero image, gallery, and story image are hidden.
 function applyPhotos() {
-  const hero = document.querySelector("#hero-photo");
-  hero.src = PROPERTY.photos[0].url;
-  hero.alt = PROPERTY.photos[0].alt;
-  for (let index = 0; index < 5; index += 1) {
-    const image = document.querySelector(`#gallery-photo-${index}`);
-    image.src = PROPERTY.photos[index].url;
-    image.alt = PROPERTY.photos[index].alt;
-  }
-  const story = document.querySelector("#story-photo");
-  story.src = PROPERTY.photos[5].url;
-  story.alt = PROPERTY.photos[5].alt;
-}
-
-async function initialize() {
-  clearLegacyStorage();
-  applyPhotos();
-  initializeForms();
-  setBookingEnabled(false);
-  appState.config = await loadConfig();
-  appState.mode = resolveBookingMode(appState.config);
-  renderBookingMode();
-  if (appState.mode === "live") await refreshAvailability();
-}
-
-async function loadConfig() {
-  try {
-    const response = await fetch("/api/config", { headers: { Accept: "application/json" } });
-    if (!response.ok) throw new Error(`Config request failed with status ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Booking configuration could not be loaded", error);
-    return null;
-  }
-}
-
-// Demo mode is only used when the server explicitly reports demoMode (local DEMO_MODE=true).
-// Any other failure disables booking instead of silently keeping requests on the device.
-function resolveBookingMode(config) {
-  if (!config) return "unavailable";
-  if (config.databaseConnected) return "live";
-  if (config.demoMode === true) return "demo";
-  return "unavailable";
-}
-
-function renderBookingMode() {
-  const status = document.querySelector("#booking-mode");
-  const messages = {
-    live: "Secure booking request · No payment is collected at this stage.",
-    demo: "Local demo mode · Requests stay in this browser tab only and are never sent to the owner.",
-    unavailable: appState.config
-      ? "Online booking isn't available right now. Please contact the host directly to reserve these dates."
-      : "We couldn't reach the booking service. Check your connection and refresh the page to try again."
+  const photos = state.photos;
+  const set = (image, photo) => {
+    if (photo) { image.src = photo.url; image.alt = photo.alt || ""; image.hidden = false; }
+    else { image.removeAttribute("src"); image.alt = ""; image.hidden = true; }
   };
-  status.textContent = messages[appState.mode];
-  status.dataset.state = appState.mode;
-  setBookingEnabled(appState.mode === "live" || appState.mode === "demo");
+  set($("#hero-photo"), photos[0]);
+  for (let index = 0; index < 5; index += 1) {
+    set($(`#gallery-photo-${index}`), photos[index]);
+    $(`#gallery-photo-${index}`).closest("button").hidden = !photos[index];
+  }
+  set($("#story-photo"), photos[5] || photos[photos.length - 1]);
+  $(".story-image").hidden = photos.length === 0;
+  $("#gallery").hidden = photos.length === 0;
+  $(".hero-gallery-link").hidden = photos.length === 0;
+  $(".photo-note").hidden = photos !== DEFAULT_PHOTOS;
 }
 
-function setBookingEnabled(enabled) {
-  document.querySelector("#booking-submit").disabled = !enabled;
+function str(value) { return typeof value === "string" ? value.trim() : ""; }
+
+function setNavVisible(hash, visible) {
+  document.querySelectorAll(`a[href="${hash}"]`).forEach((a) => { a.hidden = !visible; });
 }
 
+function applyProperty(property) {
+  const max = Number(property?.max_guests);
+  if (Number.isInteger(max) && max >= 1 && max <= 100) {
+    state.maxGuests = max;
+    $("#hero-guest-badge").textContent = `Up to ${max} guest${max === 1 ? "" : "s"}`;
+    $("#fact-guests").textContent = String(max);
+  }
+  if (isTimeZone(property?.timezone)) state.timezone = property.timezone;
+  if (str(property?.name)) setPropertyName(str(property.name));
+}
+
+function setPropertyName(name) {
+  document.title = `${name} — Direct booking`;
+  document.querySelectorAll("[data-property-name]").forEach((node) => { node.textContent = name; });
+  document.querySelectorAll("[data-property-label]").forEach((node) => node.setAttribute("aria-label", `${name} home`));
+}
+
+// Published content fully replaces the built-in defaults: anything removed in the admin is
+// removed here too. Built-in defaults are used only when nothing is published (content null).
+function applyContent(content) {
+  if (!content || typeof content !== "object") return;
+  if (str(content.title)) setPropertyName(str(content.title));
+  const headline = str(content.hero_title) || str(content.title);
+  if (headline) $("#hero-title").textContent = headline;
+  $("#intro-lead").textContent = str(content.description);
+  $("#intro-lead").hidden = !str(content.description);
+
+  state.photos = (Array.isArray(content.photos) ? content.photos : [])
+    .map((p) => ({ url: safeHttpsUrl(p?.url), alt: str(p?.alt) }))
+    .filter((p) => p.url);
+
+  const amenities = (Array.isArray(content.amenities) ? content.amenities : []).filter((a) => str(a?.title));
+  $("#amenities-note").hidden = true;
+  $(".amenity-grid").replaceChildren(...amenities.map((a) => el("article", {}, el("span", { "aria-hidden": "true", text: "✦" }), el("h3", { text: str(a.title) }), el("p", { text: str(a.description) }))));
+  $("#amenities").hidden = amenities.length === 0;
+  setNavVisible("#amenities", amenities.length > 0);
+
+  const faqs = (Array.isArray(content.faq) ? content.faq : []).filter((f) => str(f?.question) && str(f?.answer)).map((f) => [str(f.question), str(f.answer)]);
+  const policies = content.policies || {};
+  if (str(policies.cancellation)) faqs.push(["What is the cancellation policy?", str(policies.cancellation)]);
+  if (str(policies.house_rules)) faqs.push(["What are the house rules?", str(policies.house_rules)]);
+  $(".faq-list").replaceChildren(...faqs.map(([q, a]) => el("details", {}, el("summary", {}, q, el("span", { "aria-hidden": "true", text: "＋" })), el("p", { text: a }))));
+
+  const contact = content.contact || {};
+  const parts = [];
+  if (str(contact.email)) parts.push(el("a", { href: `mailto:${encodeURIComponent(str(contact.email)).replace(/%40/g, "@")}`, text: str(contact.email) }));
+  if (str(contact.phone)) parts.push(el("a", { href: `tel:${str(contact.phone).replace(/[^\d+]/g, "")}`, text: str(contact.phone) }));
+  const line = $("#contact-line");
+  line.replaceChildren(...(parts.length ? ["Questions? Contact the host: ", ...parts.flatMap((p, i) => (i ? [" · ", p] : [p]))] : []));
+  line.hidden = parts.length === 0;
+  $(".faq-list").hidden = faqs.length === 0;
+  $("#faq").hidden = faqs.length === 0 && parts.length === 0;
+  setNavVisible("#faq", !$("#faq").hidden);
+}
+
+// ---------- Property-local dates ----------
+function isTimeZone(value) {
+  if (typeof value !== "string" || !value) return false;
+  try { new Intl.DateTimeFormat("en-CA", { timeZone: value }); return true; } catch { return false; }
+}
+// Today's calendar date in the property's time zone (not the browser's).
+function propertyToday() {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: state.timezone, year: "numeric", month: "2-digit", day: "2-digit" })
+    .formatToParts(new Date()).map((p) => [p.type, p.value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+// ---------- Booking form ----------
 function initializeForms() {
-  const selectOptions = Array.from({ length: PROPERTY.maxGuests }, (_, index) => `<option value="${index + 1}">${index + 1} guest${index ? "s" : ""}</option>`).join("");
+  const options = () => Array.from({ length: state.maxGuests }, (_, i) => el("option", { value: String(i + 1), text: `${i + 1} guest${i ? "s" : ""}` }));
   document.querySelectorAll("#hero-guests, #booking-guests").forEach((select) => {
-    select.innerHTML = selectOptions;
-    select.value = "2";
+    const current = select.value || "2";
+    select.replaceChildren(...options());
+    select.value = Number(current) <= state.maxGuests ? current : "1";
   });
-  const checkin = dateOffset(14);
-  const checkout = dateOffset(17);
-  document.querySelectorAll("#hero-checkin, #booking-checkin").forEach((input) => { input.min = dateOffset(1); input.value = checkin; });
-  document.querySelectorAll("#hero-checkout, #booking-checkout").forEach((input) => { input.min = dateOffset(2); input.value = checkout; });
-  document.querySelector("#nightly-price").textContent = currency.format(PROPERTY.nightlyRate);
-  updatePrice();
-  updateManageButton();
+  const today = propertyToday();
+  document.querySelectorAll("#hero-checkin, #booking-checkin").forEach((input) => { if (!input.value) input.value = addDays(today, 14); });
+  document.querySelectorAll("#hero-checkout, #booking-checkout").forEach((input) => { if (!input.value) input.value = addDays(today, 17); });
+  refreshDateLimits();
 }
 
-async function refreshAvailability() {
-  try {
-    const response = await fetch(`/api/availability?from=${dateOffset(0)}&to=${dateOffset(400)}`);
-    if (!response.ok) throw new Error();
-    appState.unavailable = (await response.json()).unavailable;
-  } catch {
-    showToast("Live availability could not be refreshed. Final availability will be checked when you submit.");
+// Same-day check-in is allowed (the server decides availability). Recomputed before each quote so a
+// page left open past midnight (property time) doesn't keep a stale minimum.
+function refreshDateLimits() {
+  const today = propertyToday();
+  for (const [checkinId, checkoutId] of [["#hero-checkin", "#hero-checkout"], ["#booking-checkin", "#booking-checkout"]]) {
+    const checkin = $(checkinId);
+    const checkout = $(checkoutId);
+    checkin.min = today;
+    if (isIsoDate(checkin.value) && checkin.value < today) checkin.value = today;
+    const firstOut = isIsoDate(checkin.value) ? addDays(checkin.value, 1) : addDays(today, 1);
+    checkout.min = firstOut;
+    if (isIsoDate(checkout.value) && checkout.value < firstOut) checkout.value = firstOut;
   }
 }
 
-function calculatePrice() {
-  const checkin = new Date(`${document.querySelector("#booking-checkin").value}T12:00:00`);
-  const checkout = new Date(`${document.querySelector("#booking-checkout").value}T12:00:00`);
-  const nights = Math.max(1, Math.round((checkout - checkin) / 86_400_000) || 1);
-  const stay = nights * PROPERTY.nightlyRate;
-  const service = Math.round(stay * PROPERTY.serviceRate);
-  return { nights, stay, cleaning: PROPERTY.cleaningFee, service, total: stay + PROPERTY.cleaningFee + service };
+function readSelection() {
+  return { check_in: $("#booking-checkin").value, check_out: $("#booking-checkout").value, guest_count: Number($("#booking-guests").value) };
+}
+function sameSelection(a, b) { return a && b && a.check_in === b.check_in && a.check_out === b.check_out && Number(a.guest_count) === Number(b.guest_count); }
+function bookable() { return state.mode === "live" || state.mode === "demo"; }
+
+function updateSubmit() {
+  const button = $("#booking-submit");
+  button.disabled = !bookable() || !state.quote || state.submitting;
+  button.setAttribute("aria-busy", String(state.submitting));
+  button.firstChild.textContent = state.submitting ? "Sending request " : "Send booking request ";
 }
 
-function updatePrice() {
-  const price = calculatePrice();
-  document.querySelector("#price-breakdown").innerHTML = `
-    <div class="price-row"><span>${currency.format(PROPERTY.nightlyRate)} × ${price.nights} night${price.nights === 1 ? "" : "s"}</span><span>${currency.format(price.stay)}</span></div>
-    <div class="price-row"><span>Cleaning fee</span><span>${currency.format(price.cleaning)}</span></div>
-    <div class="price-row"><span>Guest service fee</span><span>${currency.format(price.service)}</span></div>
-    <div class="price-row total"><span>Total CAD</span><span>${currency.format(price.total)}</span></div>
-  `;
-  return price;
+function renderPriceMessage(message, tone = "") {
+  const box = $("#price-breakdown");
+  box.replaceChildren(el("p", { className: `price-message ${tone}`.trim(), text: message }));
+  box.setAttribute("aria-busy", tone === "loading" ? "true" : "false");
 }
 
-function syncHeroToBooking() {
-  document.querySelector("#booking-checkin").value = document.querySelector("#hero-checkin").value;
-  document.querySelector("#booking-checkout").value = document.querySelector("#hero-checkout").value;
-  document.querySelector("#booking-guests").value = document.querySelector("#hero-guests").value;
-  updatePrice();
+function renderQuote(quote) {
+  const row = (labelText, cents, extra = "") => el("div", { className: `price-row ${extra}`.trim() }, el("span", { text: labelText }), el("span", { text: formatMoney(cents, quote.currency) }));
+  const rows = [row(`Stay · ${quote.nights} night${quote.nights === 1 ? "" : "s"}`, quote.stay_cents)];
+  if (quote.cleaning_fee_cents) rows.push(row("Cleaning fee", quote.cleaning_fee_cents));
+  if (quote.service_fee_cents) rows.push(row("Guest service fee", quote.service_fee_cents));
+  if (quote.tax_cents) rows.push(row("Taxes", quote.tax_cents));
+  rows.push(row(`Total ${quote.currency}`, quote.total_cents, "total"));
+  $("#price-breakdown").replaceChildren(...rows);
+  $("#price-breakdown").setAttribute("aria-busy", "false");
+  const nightly = quote.nights ? Math.round(quote.stay_cents / quote.nights) : quote.stay_cents;
+  $("#nightly-price").textContent = formatMoney(nightly, quote.currency);
+  $("#nightly-label").textContent = "Avg / night";
 }
 
-async function checkAvailability(event) {
-  event.preventDefault();
-  syncHeroToBooking();
-  document.querySelector("#book").scrollIntoView({ behavior: "smooth" });
-  if (appState.mode !== "live" && appState.mode !== "demo") return showToast(document.querySelector("#booking-mode").textContent);
-  if (appState.mode === "live") await refreshAvailability();
-  const dates = getBookingDates();
-  showToast(hasConflict(dates.checkIn, dates.checkOut) ? "Those dates are unavailable. Try another stay." : "Those dates look available. Complete your details to request the stay.");
+function invalidateQuote() {
+  state.quote = null;
+  clearTimeout(state.quoteExpiryTimer);
+  updateSubmit();
 }
 
-function getBookingDates() {
-  return { checkIn: document.querySelector("#booking-checkin").value, checkOut: document.querySelector("#booking-checkout").value };
+function quoteExpired(quote) { return !quote || !(quote.localDeadline > Date.now()); }
+
+function scheduleQuote(delay = 300) {
+  invalidateQuote();
+  clearTimeout(state.quoteTimer);
+  if (!bookable()) return;
+  refreshDateLimits();
+  const selection = readSelection();
+  if (!isIsoDate(selection.check_in) || !isIsoDate(selection.check_out)) return renderPriceMessage("Choose your dates to see the full price.");
+  if (selection.check_out <= selection.check_in) return renderPriceMessage("Check-out must be after check-in.", "error");
+  renderPriceMessage("Updating your price…", "loading");
+  state.quoteTimer = setTimeout(() => requestQuote(selection), delay);
 }
 
-function hasConflict(checkIn, checkOut) {
-  const localRanges = appState.demoBookings.map((booking) => ({ start: booking.checkIn, end: booking.checkOut }));
-  return [...appState.unavailable, ...localRanges].some((range) => checkIn < range.end && checkOut > range.start);
+async function requestQuote(selection) {
+  const seq = ++state.quoteSeq;
+  try {
+    const data = await apiFetch("/api/quotes", { method: "POST", body: selection });
+    if (seq !== state.quoteSeq || !sameSelection(selection, readSelection())) return; // stale
+    const quote = data?.quote;
+    if (!quote?.id || !Number.isInteger(quote.total_cents) || !sameSelection(quote, selection)) throw new ApiError("malformed", "We couldn't price those dates. Please try again.");
+    // Local deadline: 15 s before expires_at, but at least 30 s from now so a fast browser clock
+    // can't cause a re-quote loop. The server still rejects truly expired quotes on submit.
+    const expires = Date.parse(quote.expires_at);
+    const lifetime = Number.isFinite(expires) ? Math.max(30_000, expires - 15_000 - Date.now()) : 30_000;
+    state.quote = { ...quote, localDeadline: Date.now() + lifetime };
+    renderQuote(quote);
+    // Disable the quote when it lapses and fetch a fresh one, so an expired price is never submitted.
+    clearTimeout(state.quoteExpiryTimer);
+    state.quoteExpiryTimer = setTimeout(() => {
+      if (state.quote?.id !== quote.id || state.submitting) return;
+      renderPriceMessage("Your price expired. Refreshing…", "loading");
+      scheduleQuote(0);
+    }, lifetime);
+  } catch (error) {
+    if (seq !== state.quoteSeq || !sameSelection(selection, readSelection())) return; // stale error
+    state.quote = null;
+    renderPriceMessage(guestMessage(error), "error");
+  }
+  updateSubmit();
+}
+
+function guestMessage(error) {
+  const messages = {
+    dates_unavailable: "Those dates aren't available. Please try another stay.",
+    booking_disabled: "Online booking is paused right now. Please contact the host.",
+    quote_expired: "Your price expired, so we've refreshed it. Please review and send again.",
+    quote_invalid: "Your price needed refreshing. Please review and send again.",
+    rate_limited: "Too many attempts. Please wait a moment and try again."
+  };
+  if (error instanceof ApiError) return messages[error.code] || (error.code === "validation_failed" || error.status === 422 || error.status === 400 ? error.message : error.code === "network" ? error.message : "Something went wrong. Please try again.");
+  return "Something went wrong. Please try again.";
+}
+
+function readGuest() {
+  return {
+    guest_name: $("#guest-name").value.trim(),
+    guest_email: $("#guest-email").value.trim(),
+    guest_phone: $("#guest-phone").value.trim(),
+    guest_notes: $("#guest-notes").value.trim()
+  };
 }
 
 async function submitBooking(event) {
   event.preventDefault();
-  if (appState.mode !== "live" && appState.mode !== "demo") return showToast(document.querySelector("#booking-mode").textContent);
-  const { checkIn, checkOut } = getBookingDates();
-  if (!checkIn || !checkOut || new Date(checkOut) <= new Date(checkIn)) return showToast("Check-out must be after check-in.");
-  if (hasConflict(checkIn, checkOut)) return showToast("Those dates overlap an existing reservation or owner block.");
-
-  const price = updatePrice();
-  const payload = {
-    checkIn,
-    checkOut,
-    guests: Number(document.querySelector("#booking-guests").value),
-    guestName: document.querySelector("#guest-name").value.trim(),
-    guestEmail: document.querySelector("#guest-email").value.trim(),
-    guestPhone: document.querySelector("#guest-phone").value.trim(),
-    guestNotes: document.querySelector("#guest-notes").value.trim()
-  };
-  const button = document.querySelector("#booking-submit");
-  button.disabled = true;
-  button.firstChild.textContent = "Sending request ";
+  if (!bookable()) return showToast($("#booking-mode").textContent);
+  if (!state.quote || state.submitting) return;
+  // The quote must still match the visible selection and be unexpired.
+  if (!sameSelection(state.quote, readSelection()) || quoteExpired(state.quote)) {
+    showToast("Your price needed refreshing. Please review it and send again.");
+    return scheduleQuote(0);
+  }
+  if (!event.target.reportValidity()) return;
+  const body = { quote_id: state.quote.id, ...readGuest() };
+  // Same quote + same details reuse the key, so a retry after a network error can't create a duplicate.
+  const fingerprint = JSON.stringify(body);
+  if (state.idempotency.fingerprint !== fingerprint) state.idempotency = { fingerprint, key: newIdempotencyKey() };
+  state.submitting = true;
+  updateSubmit();
   try {
-    let booking;
-    if (appState.mode === "live") {
-      const response = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "The booking request could not be sent. Please try again.");
-      booking = data.booking;
-    } else {
-      booking = {
-        id: crypto.randomUUID(),
-        confirmationCode: `PREVIEW-${Date.now().toString().slice(-6)}`,
-        ...payload,
-        totalCents: price.total * 100,
-        currency: "CAD",
-        status: "preview",
-        localOnly: true
-      };
-      appState.demoBookings = [booking, ...appState.demoBookings].slice(0, 10);
-    }
-    appState.lastBooking = booking;
-    updateManageButton();
-    renderConfirmation(booking);
+    const data = await apiFetch("/api/bookings", { method: "POST", body: { ...body, idempotency_key: state.idempotency.key } });
+    if (!data?.booking || typeof data.guest_token !== "string") throw new ApiError("malformed", "Unexpected response");
+    state.idempotency = { fingerprint: "", key: "" };
+    state.lastBooking = { booking: data.booking, token: data.guest_token };
+    $("[data-manage-booking]").hidden = false;
+    renderConfirmation();
     showLayer(confirmationModal);
-    if (!booking.localOnly) await refreshAvailability();
+    scheduleQuote(0);
   } catch (error) {
-    showToast(error.message);
+    if (["quote_expired", "quote_invalid", "dates_unavailable"].includes(error?.code)) {
+      state.idempotency = { fingerprint: "", key: "" };
+      scheduleQuote(0);
+    }
+    showToast(guestMessage(error));
   } finally {
-    button.disabled = appState.mode !== "live" && appState.mode !== "demo";
-    button.firstChild.textContent = "Send booking request ";
+    state.submitting = false;
+    updateSubmit();
   }
 }
 
-function renderConfirmation(booking = appState.lastBooking) {
-  if (!booking) return;
-  const local = booking.localOnly || booking.status === "preview";
-  document.querySelector("#confirmation-eyebrow").textContent = local ? "Demo request (not sent)" : "Booking request received";
-  document.querySelector("#confirmation-copy").textContent = local
-    ? "Local demo mode: this request exists only in this browser tab and was not sent to the owner."
-    : "No payment was collected. The owner can now review your request and confirm the stay.";
-  document.querySelector("#confirmation-details").innerHTML = `
-    <div><span>Confirmation</span><strong>${escapeHtml(booking.confirmationCode || booking.id)}</strong></div>
-    <div><span>Dates</span><strong>${formatDate(booking.checkIn)} – ${formatDate(booking.checkOut)}</strong></div>
-    <div><span>Guests</span><strong>${booking.guests}</strong></div>
-    <div><span>Total</span><strong>${currency.format((booking.totalCents || 0) / 100)} CAD</strong></div>
-    <div><span>Status</span><strong>${escapeHtml(local ? "Preview only" : booking.status)}</strong></div>
-  `;
-  const calendarLink = document.querySelector("#booking-calendar-link");
-  calendarLink.hidden = !booking.calendarUrl;
-  if (booking.calendarUrl) calendarLink.href = booking.calendarUrl;
+function renderConfirmation() {
+  const record = state.lastBooking;
+  if (!record) return;
+  const { booking, token } = record;
+  const demo = state.mode === "demo";
+  $("#confirmation-eyebrow").textContent = demo ? "Demo request received" : "Booking request received";
+  $("#confirmation-title").textContent = "Your request is pending.";
+  $("#confirmation-copy").textContent = `${demo ? "Demo environment — no owner is notified. " : ""}The owner will review your request. Nothing is confirmed and no payment is taken until it's approved; you'll then pay securely from your booking page.`;
+  const item = (name, value) => el("div", {}, el("span", { text: name }), el("strong", { text: value }));
+  $("#confirmation-details").replaceChildren(
+    item("Confirmation", booking.confirmation_code || "—"),
+    item("Dates", `${formatDate(booking.check_in)} – ${formatDate(booking.check_out)}`),
+    item("Guests", String(booking.guest_count ?? "—")),
+    item("Total", formatMoney(booking.total_cents, booking.currency)),
+    item("Status", "Pending owner review")
+  );
+  const link = $("#booking-page-link");
+  link.href = `/booking#token=${encodeURIComponent(token)}`;
+  link.hidden = false;
 }
 
-function updateManageButton() {
-  document.querySelector("[data-manage-booking]").hidden = !appState.lastBooking;
+// ---------- Mode ----------
+async function initialize() {
+  clearLegacyStorage();
+  applyPhotos();
+  initializeForms();
+  updateSubmit();
+  let config = null;
+  try { config = await apiFetch("/api/config"); } catch { config = null; }
+  if (!config) state.mode = "unavailable";
+  else if (config.bookingEnabled === false) state.mode = "unavailable";
+  else state.mode = config.demoMode === true ? "demo" : "live";
+
+  try {
+    const data = await apiFetch("/api/property");
+    applyProperty(data?.property);
+    applyContent(data?.content);
+    if (data?.property?.booking_enabled === false) state.mode = "unavailable";
+    applyPhotos();
+    initializeForms();
+  } catch { /* keep built-in content */ }
+
+  const messages = {
+    live: "Request to book · The owner reviews every request. You pay only after approval.",
+    demo: "Demo environment · Requests are handled by a test server and never reach the owner.",
+    unavailable: config ? "Online booking isn't available right now. Please contact the host directly." : "We couldn't reach the booking service. Check your connection and refresh to try again."
+  };
+  $("#booking-mode").textContent = messages[state.mode];
+  $("#booking-mode").dataset.state = state.mode;
+  if (bookable()) scheduleQuote(0);
+  else renderPriceMessage("Pricing appears here when online booking is available.");
 }
 
+function syncHeroToBooking() {
+  $("#booking-checkin").value = $("#hero-checkin").value;
+  $("#booking-checkout").value = $("#hero-checkout").value;
+  $("#booking-guests").value = $("#hero-guests").value;
+  scheduleQuote(0);
+}
+
+// ---------- Layers ----------
 function openGallery(index) {
-  galleryIndex = index;
-  const photo = PROPERTY.photos[galleryIndex];
-  document.querySelector("#lightbox-image").src = photo.url;
-  document.querySelector("#lightbox-image").alt = photo.alt;
-  document.querySelector("#lightbox-caption").textContent = `${galleryIndex + 1} / ${PROPERTY.photos.length} · ${photo.alt}`;
+  if (!state.photos.length) return;
+  galleryIndex = Math.min(Math.max(0, index), state.photos.length - 1);
+  const photo = state.photos[galleryIndex];
+  $("#lightbox-image").src = photo.url;
+  $("#lightbox-image").alt = photo.alt || "";
+  $("#lightbox-caption").textContent = `${galleryIndex + 1} / ${state.photos.length}${photo.alt ? ` · ${photo.alt}` : ""}`;
   showLayer(lightbox);
 }
-
-function moveGallery(direction) { galleryIndex = (galleryIndex + direction + PROPERTY.photos.length) % PROPERTY.photos.length; openGallery(galleryIndex); }
-function showLayer(layer) { layer.hidden = false; document.body.classList.add("layer-open"); }
+function moveGallery(direction) { if (!state.photos.length) return; openGallery((galleryIndex + direction + state.photos.length) % state.photos.length); }
+function showLayer(layer) { layer.hidden = false; document.body.classList.add("layer-open"); layer.querySelector("button")?.focus(); }
 function hideLayer(layer) { layer.hidden = true; if ([lightbox, confirmationModal].every((item) => item.hidden)) document.body.classList.remove("layer-open"); }
-function showToast(message) { toast.textContent = message; toast.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove("show"), 3600); }
-function formatDate(value) { return dateFormat.format(new Date(`${value}T12:00:00`)); }
-function escapeHtml(value = "") { return String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]); }
+function showToast(message) { toast.textContent = message; toast.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove("show"), 4200); }
 
-document.querySelector("#hero-booking-form").addEventListener("submit", checkAvailability);
-bookingForm.addEventListener("submit", submitBooking);
-document.querySelectorAll("#booking-checkin, #booking-checkout").forEach((input) => input.addEventListener("change", () => {
-  if (input.id === "booking-checkin") document.querySelector("#booking-checkout").min = input.value;
-  updatePrice();
+$("#hero-booking-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  syncHeroToBooking();
+  $("#book").scrollIntoView({ behavior: "smooth" });
+  if (!bookable()) showToast($("#booking-mode").textContent);
+});
+$("#booking-form").addEventListener("submit", submitBooking);
+document.querySelectorAll("#booking-checkin, #booking-checkout, #booking-guests").forEach((input) => input.addEventListener("change", () => {
+  if (input.id === "booking-checkin" && isIsoDate(input.value)) {
+    const checkout = $("#booking-checkout");
+    checkout.min = addDays(input.value, 1);
+    if (checkout.value <= input.value) checkout.value = addDays(input.value, 1);
+  }
+  scheduleQuote();
 }));
+$("#hero-checkin").addEventListener("change", (event) => {
+  const checkout = $("#hero-checkout");
+  if (isIsoDate(event.target.value)) { checkout.min = addDays(event.target.value, 1); if (checkout.value <= event.target.value) checkout.value = addDays(event.target.value, 1); }
+});
 
 document.addEventListener("click", (event) => {
   const galleryTrigger = event.target.closest("[data-open-gallery]");
@@ -283,7 +417,7 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("[data-gallery-next]")) moveGallery(1);
   if (event.target.closest("[data-close-confirmation]")) hideLayer(confirmationModal);
   if (event.target.closest("[data-manage-booking]")) { renderConfirmation(); showLayer(confirmationModal); }
-  if (event.target.closest("[data-book-now]")) document.querySelector("#book").scrollIntoView({ behavior: "smooth" });
+  if (event.target.closest("[data-book-now]")) $("#book").scrollIntoView({ behavior: "smooth" });
   const season = event.target.closest("[data-season]");
   if (season) {
     const copy = {
@@ -292,7 +426,7 @@ document.addEventListener("click", (event) => {
       anytime: "Spa days, local markets, good food, and unrushed time together in every season."
     };
     document.querySelectorAll("[data-season]").forEach((button) => button.classList.toggle("active", button === season));
-    document.querySelector("#season-copy").textContent = copy[season.dataset.season];
+    $("#season-copy").textContent = copy[season.dataset.season];
   }
 });
 

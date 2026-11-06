@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Book a private Blue Mountain house directly. Single-property booking website demo." />
+    <meta name="description" content="Book a private Blue Mountain house directly with the owner." />
     <meta name="theme-color" content="#f4f1e9" />
     <title>The Blue Mountain House — Direct booking</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -16,11 +16,11 @@
     <a class="skip-link" href="#main">Skip to content</a>
 
     <header class="site-header">
-      <a class="brand" href="#top" aria-label="The Blue Mountain House home">
+      <a class="brand" href="#top" aria-label="The Blue Mountain House home" data-property-label>
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 42 42"><path d="M7 30 20.8 7 35 30h-8l-6.2-10.4L15 30H7Z"/><path d="m13 31 7.8-13L29 31"/></svg>
         </span>
-        <span>The Blue Mountain House</span>
+        <span data-property-name>The Blue Mountain House</span>
       </a>
       <nav aria-label="Main navigation">
         <a href="#house">The house</a>
@@ -40,7 +40,7 @@
           <h1 id="hero-title">Your place to<br /><em>come together.</em></h1>
           <p class="hero-subtitle">One thoughtfully designed house. Your whole group. Mountains, village, and Georgian Bay close by.</p>
           <div class="hero-badges">
-            <span>Entire home</span><span>Up to 8 guests</span><span>4 bedrooms</span>
+            <span>Entire home</span><span id="hero-guest-badge">Up to 8 guests</span><span>4 bedrooms</span>
           </div>
         </div>
         <a class="hero-gallery-link" href="#gallery"><span>View the house</span><span>↘</span></a>
@@ -63,10 +63,10 @@
           <h2 id="intro-title">Room to gather.<br />Space to exhale.</h2>
         </div>
         <div class="intro-copy">
-          <p class="lead">A warm, modern home made for ski weekends, summer escapes, and unhurried time with the people you love.</p>
-          <p>This demo is structured for one vacation rental only—your future photos, exact house details, policies, and location can be dropped in without rebuilding the booking experience.</p>
+          <p class="lead" id="intro-lead">A warm, modern home made for ski weekends, summer escapes, and unhurried time with the people you love.</p>
+          <p>Book directly with the owner. Every request is reviewed personally, and you only pay once your stay is approved.</p>
           <div class="property-facts" aria-label="Property details">
-            <div><strong>8</strong><span>Guests</span></div>
+            <div><strong id="fact-guests">8</strong><span>Guests</span></div>
             <div><strong>4</strong><span>Bedrooms</span></div>
             <div><strong>5</strong><span>Beds</span></div>
             <div><strong>2.5</strong><span>Bathrooms</span></div>
@@ -108,7 +108,7 @@
         <div class="amenities-heading">
           <p class="eyebrow">Everything you need</p>
           <h2 id="amenities-title">Stay easy.</h2>
-          <p>These are sample amenities for the demo. Update them to match the house before taking real reservations.</p>
+          <p id="amenities-note">Thoughtful comforts for every season.</p>
         </div>
         <div class="amenity-grid">
           <article><span>♨</span><h3>Private hot tub</h3><p>A warm soak after a day outside.</p></article>
@@ -124,12 +124,12 @@
         <div class="location-copy">
           <p class="eyebrow light">The Blue Mountains, Ontario</p>
           <h2 id="location-title">Close to what<br />brought you here.</h2>
-          <p>The exact address stays private until booking. Replace the example travel times below with accurate details for your property.</p>
+          <p>The exact address is shared once your stay is confirmed. Approximate drive times:</p>
           <div class="distance-list">
-            <div><span>Blue Mountain Village</span><strong>Sample · 5 min</strong></div>
-            <div><span>Scenic Caves Nature Adventures</span><strong>Sample · 10 min</strong></div>
-            <div><span>Downtown Collingwood</span><strong>Sample · 15 min</strong></div>
-            <div><span>Georgian Bay beaches</span><strong>Sample · 15 min</strong></div>
+            <div><span>Blue Mountain Village</span><strong>~5 min</strong></div>
+            <div><span>Scenic Caves Nature Adventures</span><strong>~10 min</strong></div>
+            <div><span>Downtown Collingwood</span><strong>~15 min</strong></div>
+            <div><span>Georgian Bay beaches</span><strong>~15 min</strong></div>
           </div>
         </div>
         <div class="location-art" aria-label="Stylized map of the Blue Mountain area">
@@ -145,15 +145,15 @@
         <div class="booking-intro">
           <p class="eyebrow">Book direct</p>
           <h2 id="booking-title">Ready when<br />you are.</h2>
-          <p>Choose your dates, see the complete price, and send a secure booking request. No payment is collected yet; you can add the stay to your calendar as soon as it is submitted.</p>
+          <p>Choose your dates, see the complete price, and send a booking request. The owner reviews it; once approved you can pay securely from your private booking page.</p>
           <div class="direct-benefits">
-            <div><span>✓</span><p><strong>Clear pricing</strong><small>See the full demo total before booking.</small></p></div>
+            <div><span>✓</span><p><strong>Clear pricing</strong><small>See the full total, including fees, before you request.</small></p></div>
             <div><span>✓</span><p><strong>Whole-home privacy</strong><small>One house, reserved for one group.</small></p></div>
-            <div><span>✓</span><p><strong>Calendar ready</strong><small>Add the confirmed dates to Apple, Google, or Outlook.</small></p></div>
+            <div><span>✓</span><p><strong>Calendar ready</strong><small>Add your stay to Apple, Google, or Outlook from your booking page.</small></p></div>
           </div>
         </div>
         <form class="booking-card" id="booking-form">
-          <div class="booking-card-top"><div><span>From</span><strong><b id="nightly-price">$425</b> / night</strong></div><span>★ New direct stay</span></div>
+          <div class="booking-card-top"><div><span id="nightly-label">Price</span><strong><b id="nightly-price">—</b> / night</strong></div><span>★ Direct stay</span></div>
           <div class="booking-fields">
             <label>Check in<input id="booking-checkin" type="date" required /></label>
             <label>Check out<input id="booking-checkout" type="date" required /></label>
@@ -165,32 +165,32 @@
             <label>Phone <span>Optional</span><input id="guest-phone" type="tel" autocomplete="tel" maxlength="40" placeholder="(705) 555-0123" /></label>
             <label>Anything we should know? <span>Optional</span><textarea id="guest-notes" maxlength="1000" rows="3" placeholder="Arrival details, accessibility needs, or a question for the host"></textarea></label>
           </div>
-          <div class="price-breakdown" id="price-breakdown"></div>
+          <div class="price-breakdown" id="price-breakdown" aria-live="polite"></div>
           <button class="primary-button" type="submit" id="booking-submit" disabled>Send booking request <span>→</span></button>
           <p class="booking-fine-print" id="booking-mode">Checking secure booking connection…</p>
-          <button class="manage-booking" type="button" data-manage-booking hidden>View my latest booking</button>
+          <button class="manage-booking" type="button" data-manage-booking hidden>View my latest request</button>
         </form>
       </section>
 
       <section class="section faq" id="faq" aria-labelledby="faq-title">
         <div><p class="eyebrow">Good to know</p><h2 id="faq-title">Before you arrive.</h2></div>
         <div class="faq-list">
-          <details><summary>What are check-in and check-out times?<span>＋</span></summary><p>Demo policy: check-in is from 4:00 PM and check-out is by 11:00 AM. Replace this with your actual house policy.</p></details>
-          <details><summary>Is the house suitable for children?<span>＋</span></summary><p>The demo assumes a family-friendly house. Add specific notes about stairs, cribs, gates, and other safety considerations.</p></details>
-          <details><summary>What is the cancellation policy?<span>＋</span></summary><p>No real cancellation policy applies to this demo. Add your terms before accepting live reservations.</p></details>
-          <details><summary>Can I bring a pet?<span>＋</span></summary><p>Pet rules are not yet configured. Replace this answer with the house’s real policy and any applicable fee.</p></details>
+          <details><summary>How does booking work?<span>＋</span></summary><p>Send a request with your dates. The owner reviews it, and once approved you'll pay securely from your private booking page. Your stay is confirmed after payment.</p></details>
+          <details><summary>When are check-in and check-out?<span>＋</span></summary><p>Exact times and house details are shared in your booking confirmation.</p></details>
+          <details><summary>What is the cancellation policy?<span>＋</span></summary><p>Please contact the host before booking for the current cancellation terms.</p></details>
         </div>
+        <p class="photo-note" id="contact-line" hidden></p>
       </section>
     </main>
 
     <footer>
       <div class="footer-main">
-        <a class="brand footer-brand" href="#top"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 42 42"><path d="M7 30 20.8 7 35 30h-8l-6.2-10.4L15 30H7Z"/><path d="m13 31 7.8-13L29 31"/></svg></span><span>The Blue Mountain House</span></a>
-        <p>One private home. One memorable stay.<br />A direct-booking concept for The Blue Mountains.</p>
+        <a class="brand footer-brand" href="#top"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 42 42"><path d="M7 30 20.8 7 35 30h-8l-6.2-10.4L15 30H7Z"/><path d="m13 31 7.8-13L29 31"/></svg></span><span data-property-name>The Blue Mountain House</span></a>
+        <p>One private home. One memorable stay.<br />Booked directly in The Blue Mountains.</p>
         <button type="button" data-book-now>Check dates <span>→</span></button>
       </div>
       <div class="footer-links"><a href="#house">The house</a><a href="#amenities">Amenities</a><a href="#location">Location</a><a href="#faq">FAQ</a><a href="/admin">Owner dashboard</a></div>
-      <div class="footer-bottom"><span>© 2026 The Blue Mountain House</span><span>Direct booking · Secure management by Supabase</span></div>
+      <div class="footer-bottom"><span>© 2026 <span data-property-name>The Blue Mountain House</span></span><span>Direct booking · Secure management by Supabase</span></div>
     </footer>
 
     <div class="lightbox" id="lightbox" hidden>
@@ -208,9 +208,10 @@
         <span class="confirmation-icon">✓</span>
         <p class="eyebrow" id="confirmation-eyebrow">Booking request received</p>
         <h2 id="confirmation-title">Your stay is on its way.</h2>
-        <p id="confirmation-copy">No payment was collected. The owner can now review your request and confirm the stay.</p>
+        <p id="confirmation-copy">The owner will review your request.</p>
         <div class="confirmation-details" id="confirmation-details"></div>
-        <a class="calendar-download" id="booking-calendar-link" href="#" hidden>Download for my calendar <span>↓</span></a>
+        <a class="calendar-download" id="booking-page-link" href="/booking" hidden>Open my private booking page <span>→</span></a>
+        <p class="booking-fine-print">Keep this link private — anyone with it can view your booking.</p>
         <button class="primary-button" type="button" data-close-confirmation>Back to the house <span>→</span></button>
       </section>
     </div>
