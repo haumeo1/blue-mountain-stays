@@ -11,6 +11,21 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      # Ephemeral database for tests/database.test.js. Synthetic credentials, no secrets.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: manager_ci
+          POSTGRES_PASSWORD: manager_ci_password
+          POSTGRES_DB: manager_ci_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U manager_ci -d manager_ci_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,6 +35,21 @@ jobs:
       - run: npm ci
       # Syntax checks for every script plus browser/server import-boundary checks.
       - run: npm run check
+      # Unit tests plus the real-Postgres migration/RPC suite (required, never skipped, in CI).
       - run: npm test
+        env:
+          DATABASE_TEST_URL: postgres://manager_ci:manager_ci_password@127.0.0.1:5432/manager_ci_test
+          DATABASE_TEST_REQUIRED: '1'
       # The build scans dist/ for server-only environment values; no secrets are configured here.
       - run: npm run build
+      # Browser suite against the synthetic in-memory fixture (no secrets, no real providers).
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - name: Upload Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: .context/playwright-results
+          if-no-files-found: ignore
+          retention-days: 7

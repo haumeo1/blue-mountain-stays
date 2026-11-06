@@ -10,9 +10,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
 const srcDir = join(root, "src");
 
-const PUBLIC_FILES = ["index.html", "admin.html", "single.css", "admin.css"];
-const ENTRY_POINTS = { guest: "src/guest/index.js", admin: "src/admin/index.js" };
-const EXPECTED_OUTPUT = new Set([...PUBLIC_FILES, "assets/guest.js", "assets/admin.js"]);
+const PUBLIC_FILES = ["index.html", "admin.html", "booking.html", "single.css", "admin.css"];
+const ENTRY_POINTS = { guest: "src/guest/index.js", admin: "src/admin/index.js", booking: "src/guest/booking.js" };
+const EXPECTED_OUTPUT = new Set([...PUBLIC_FILES, ...Object.keys(ENTRY_POINTS).map((name) => `assets/${name}.js`)]);
+// Server-only values that must never appear in dist/. Public values (URLs, publishable key, RESEND_FROM) are excluded.
 const SECRET_ENV_KEYS = [
   "SUPABASE_SECRET_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
@@ -20,6 +21,8 @@ const SECRET_ENV_KEYS = [
   "STRIPE_WEBHOOK_SECRET",
   "RESEND_API_KEY",
   "CALENDAR_FEED_TOKEN",
+  "GUEST_TOKEN_SECRET",
+  "CRON_SECRET",
   "DATABASE_URL"
 ];
 

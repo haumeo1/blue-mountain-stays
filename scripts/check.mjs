@@ -7,8 +7,8 @@ import { sourceViolations } from "./lib/boundaries.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE_DIRS = ["api", "server", "src", "scripts", "tests"];
-const PAGES = ["public/index.html", "public/admin.html"];
-const ALLOWED_PAGE_SCRIPTS = new Set(["/assets/guest.js", "/assets/admin.js"]);
+const PAGES = ["public/index.html", "public/admin.html", "public/booking.html"];
+const ALLOWED_PAGE_SCRIPTS = new Set(["/assets/guest.js", "/assets/admin.js", "/assets/booking.js"]);
 
 async function listFiles(directory) {
   let entries;

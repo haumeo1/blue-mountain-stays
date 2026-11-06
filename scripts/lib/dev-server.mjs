@@ -22,7 +22,8 @@ const CONTENT_TYPES = {
 
 const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
-  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Referrer-Policy": "no-referrer",
+  "X-Frame-Options": "DENY",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
 };
 
@@ -83,6 +84,18 @@ export async function discoverApiRoutes(apiDir) {
   return routes;
 }
 
+// Mirrors vercel.json: exact api/ files win; otherwise /api/<path> → /api/router?route=<path>.
+// /api/router itself is never addressable directly, so its route is always path-derived.
+export const ROUTER_ROUTE = "/api/router";
+export function resolveApiTarget(apiRoutes, pathname) {
+  if (pathname !== ROUTER_ROUTE && apiRoutes.has(pathname)) return { file: apiRoutes.get(pathname), route: null };
+  const router = apiRoutes.get(ROUTER_ROUTE);
+  if (!router || !pathname.startsWith("/api/")) return null;
+  const route = pathname.slice("/api/".length);
+  if (!route) return null;
+  return { file: router, route };
+}
+
 export async function loadEnvironmentFile(filePath) {
   let content;
   try { content = await readFile(filePath, "utf8"); } catch (error) {
@@ -98,6 +111,12 @@ export async function loadEnvironmentFile(filePath) {
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
     if (!(key in process.env)) process.env[key] = value;
   }
+}
+
+export function resolvePort(raw = process.env.PORT) {
+  if (raw === undefined || raw === "") return 3000;
+  if (!/^\d{1,5}$/.test(raw) || Number(raw) < 1 || Number(raw) > 65535) throw new Error("PORT must be an integer from 1 to 65535");
+  return Number(raw);
 }
 
 function applySecurityHeaders(response) {
@@ -126,15 +145,20 @@ export async function createDevServer({ root, distDir = join(root, "dist"), apiD
       const { rawPathname, pathname, search, searchParams } = parsed;
 
       if (pathname === "/api" || pathname.startsWith("/api/")) {
-        const file = apiRoutes.get(pathname);
-        if (!file) return sendText(response, 404, "Not found");
+        const target = resolveApiTarget(apiRoutes, pathname);
+        if (!target) return sendText(response, 404, "Not found");
+        const { file, route } = target;
         let module = modules.get(file);
         if (!module) {
           module = await import(pathToFileURL(file).href);
           modules.set(file, module);
         }
         if (typeof module.default !== "function") throw new Error(`${pathname} has no default handler export`);
-        request.query = Object.fromEntries(searchParams.entries());
+        const query = Object.fromEntries(searchParams.entries());
+        // The router's route always comes from the path; a client ?route= can never override it.
+        if (route !== null) query.route = route;
+        else delete query.route;
+        request.query = query;
         await module.default(request, response);
         return;
       }

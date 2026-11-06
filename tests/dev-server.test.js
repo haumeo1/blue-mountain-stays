@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { cleanUrlRedirect, createDevServer, discoverApiRoutes, parseRequestPath, resolveStaticFile } from "../scripts/lib/dev-server.mjs";
+import { cleanUrlRedirect, createDevServer, discoverApiRoutes, parseRequestPath, resolveApiTarget, resolvePort, resolveStaticFile } from "../scripts/lib/dev-server.mjs";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -66,9 +66,55 @@ test("resolves only regular files inside dist", async () => {
 
 test("repository API routes exclude helper files", async () => {
   const routes = await discoverApiRoutes(join(repoRoot, "api"));
-  assert.ok(routes.has("/api/config"));
-  assert.ok(routes.has("/api/admin/bookings"));
+  // Either legacy per-file routes or the single router must be present.
+  assert.ok(routes.has("/api/config") || routes.has("/api/router"));
   assert.ok([...routes.keys()].every((route) => !route.includes("/_")));
+});
+
+test("resolveApiTarget prefers exact files and never exposes the router directly", () => {
+  const routes = new Map([["/api/hello", "hello.js"], ["/api/router", "router.js"]]);
+  assert.deepEqual(resolveApiTarget(routes, "/api/hello"), { file: "hello.js", route: null });
+  assert.deepEqual(resolveApiTarget(routes, "/api/admin/bookings/42"), { file: "router.js", route: "admin/bookings/42" });
+  assert.deepEqual(resolveApiTarget(routes, "/api/router"), { file: "router.js", route: "router" });
+  assert.equal(resolveApiTarget(routes, "/api"), null);
+  assert.equal(resolveApiTarget(new Map([["/api/hello", "hello.js"]]), "/api/missing"), null);
+});
+
+test("resolvePort validates PORT", () => {
+  assert.equal(resolvePort(undefined), 3000);
+  assert.equal(resolvePort("4000"), 4000);
+  for (const bad of ["0", "70000", "80abc", "-1", " 80"]) assert.throws(() => resolvePort(bad));
+});
+
+test("falls back to api/router with a path-derived route that clients cannot spoof", async () => {
+  const root = await createFixture();
+  await writeFile(join(root, "api", "router.js"), [
+    "export default async function handler(request, response) {",
+    "  response.setHeader(\"Content-Type\", \"application/json\");",
+    "  response.end(JSON.stringify({ router: true, query: request.query }));",
+    "}",
+    ""
+  ].join("\n"));
+  const server = await createDevServer({ root });
+  await new Promise((done) => server.listen(0, "127.0.0.1", done));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    assert.deepEqual(await (await fetch(`${base}/api/hello?route=admin`)).json(), { query: {} });
+    assert.deepEqual(await (await fetch(`${base}/api/admin/bookings/7?page=2&route=config`)).json(),
+      { router: true, query: { page: "2", route: "admin/bookings/7" } });
+    assert.deepEqual(await (await fetch(`${base}/api/router?route=admin/overview`)).json(),
+      { router: true, query: { route: "router" } });
+    assert.equal((await fetch(`${base}/api/%E0%A4%A`)).status, 400);
+    assert.equal((await fetch(`${base}/api/.env`)).status, 400);
+    assert.equal((await fetch(`${base}/api/_lib/util`)).status, 200); // routed as a path, never as the file
+    const headers = (await fetch(`${base}/`)).headers;
+    assert.equal(headers.get("x-frame-options"), "DENY");
+    assert.equal(headers.get("referrer-policy"), "no-referrer");
+  } finally {
+    server.closeAllConnections();
+    await new Promise((done) => server.close(done));
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("serves dist and awaited API handlers only", async () => {

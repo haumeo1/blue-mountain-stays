@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#f4f1e9" />
+    <title>Your booking — The Blue Mountain House</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/single.css" />
+    <style>
+      .booking-page { min-height: 100vh; display: grid; place-items: center; padding: 2rem 1rem; }
+      .booking-page .confirmation-card { position: static; transform: none; width: min(560px, 100%); }
+      .booking-page .price-breakdown { display: grid; gap: .7rem; text-align: left; margin: 1rem 0; }
+      .booking-page .status-pill { display: inline-block; padding: .35rem .7rem; border-radius: 99px; background: var(--cream); font-size: .65rem; font-weight: 700; }
+      .booking-page .actions { display: grid; gap: .7rem; margin-top: 1rem; }
+      .booking-page .notice { font-size: .72rem; color: #9a3b2f; }
+    </style>
+    <script src="/assets/booking.js" type="module"></script>
+  </head>
+  <body>
+    <main class="booking-page" id="main">
+      <section class="confirmation-card" aria-labelledby="booking-title" aria-busy="true" id="booking-card">
+        <a class="brand" href="/" aria-label="The Blue Mountain House home" style="justify-content:center;margin-bottom:1.5rem">
+          <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 42 42"><path d="M7 30 20.8 7 35 30h-8l-6.2-10.4L15 30H7Z"/><path d="m13 31 7.8-13L29 31"/></svg></span>
+          <span>The Blue Mountain House</span>
+        </a>
+        <p class="eyebrow" id="booking-eyebrow">Your booking</p>
+        <h2 id="booking-title">Loading your booking…</h2>
+        <p id="booking-summary" role="status" aria-live="polite"></p>
+        <div id="booking-body" hidden>
+          <p><span class="status-pill" id="booking-status"></span></p>
+          <div class="confirmation-details" id="booking-details"></div>
+          <div class="price-breakdown" id="booking-price"></div>
+          <div class="actions">
+            <button class="primary-button" type="button" id="pay-button" hidden>Pay securely with Stripe <span>→</span></button>
+            <a class="calendar-download" id="receipt-link" href="#" hidden target="_blank" rel="noopener noreferrer">View payment receipt <span>↗</span></a>
+            <a class="calendar-download" id="calendar-link" href="#" hidden>Add to my calendar <span>↓</span></a>
+            <button class="manage-booking" type="button" id="refresh-button">Refresh status</button>
+          </div>
+        </div>
+        <p class="booking-fine-print">Keep this page's link private. <a href="/">Back to the house</a></p>
+      </section>
+    </main>
+  </body>
+</html>

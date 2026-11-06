@@ -7,3 +7,7 @@ node_modules
 coverage
 dist
 .context
+playwright-report
+test-results
+blob-report
+playwright/.cache
